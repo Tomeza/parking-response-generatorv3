@@ -8,31 +8,40 @@
 }
 
 :root {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 30, 30, 30;
-  --background-end-rgb: 20, 20, 20;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --foreground-rgb: 237, 237, 237;
+  --background-start-rgb: 18, 18, 18;
+  --background-end-rgb: 10, 10, 10;
+  
+  /* ダークモードのカラーパレット */
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --secondary: #6b7280;
+  --accent: #8b5cf6;
+  --accent-hover: #7c3aed;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --background: #121212;
+  --card-bg: #1e1e1e;
+  --card-border: #333333;
+  --text-primary: #ededed;
+  --text-secondary: #a3a3a3;
+  --text-muted: #6b7280;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
+  color: var(--text-primary);
   background: linear-gradient(
       to bottom,
       rgb(var(--background-start-rgb)),
       rgb(var(--background-end-rgb))
     )
     fixed;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
 .highlight {
-  color: #0066FF;
+  color: var(--primary);
   font-weight: 500;
 }
 
@@ -58,15 +67,58 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #2c2c2c;
+  background: var(--card-bg);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #555;
+  background: var(--secondary);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #666;
+}
+
+/* カスタムコンポーネントスタイル */
+@layer components {
+  .card {
+    @apply bg-gray-800 rounded-lg p-4 border border-gray-700;
+  }
+
+  .btn {
+    @apply px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 transition-colors;
+  }
+
+  .btn-primary {
+    @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500;
+  }
+
+  .btn-accent {
+    @apply bg-purple-600 text-white hover:bg-purple-700 focus:ring-purple-500;
+  }
+
+  .input {
+    @apply w-full p-3 border rounded-lg bg-gray-800 border-gray-700 text-white focus:ring-blue-500 focus:border-blue-500;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-blue {
+    @apply bg-blue-900 text-blue-200;
+  }
+
+  .badge-purple {
+    @apply bg-purple-900 text-purple-200;
+  }
+
+  .badge-gray {
+    @apply bg-gray-700 text-gray-200;
+  }
 }
