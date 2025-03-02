@@ -4,9 +4,9 @@ import { refineResponse } from '@/lib/anthropic';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { original_response, tone } = body;
+    const { text, tone } = body;
 
-    if (!original_response) {
+    if (!text) {
       return NextResponse.json(
         { error: '元の回答が必要です' },
         { status: 400 }
@@ -14,11 +14,11 @@ export async function POST(request: NextRequest) {
     }
 
     const refinedResponse = await refineResponse(
-      original_response,
+      text,
       tone || 'formal'
     );
 
-    return NextResponse.json({ refined_response: refinedResponse });
+    return NextResponse.json({ refinedText: refinedResponse });
   } catch (error) {
     console.error('API error:', error);
     return NextResponse.json(
