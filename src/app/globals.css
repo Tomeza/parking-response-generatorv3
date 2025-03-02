@@ -1,4 +1,6 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @theme {
   --font-sans: var(--font-geist-sans);
@@ -6,8 +8,9 @@
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 30, 30, 30;
+  --background-end-rgb: 20, 20, 20;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -18,7 +21,52 @@
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      rgb(var(--background-start-rgb)),
+      rgb(var(--background-end-rgb))
+    )
+    fixed;
   font-family: Arial, Helvetica, sans-serif;
+}
+
+.highlight {
+  color: #0066FF;
+  font-weight: 500;
+}
+
+/* アニメーション */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* スクロールバーのスタイル */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #2c2c2c;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #666;
 }
