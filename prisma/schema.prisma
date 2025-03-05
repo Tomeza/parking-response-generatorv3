@@ -131,3 +131,43 @@ model LargeVehicleSeason {
   @@index([startDate, endDate])
   @@index([year])
 }
+
+model CategoryWeight {
+  id        Int      @id @default(autoincrement())
+  category  String   @unique
+  weight    Float    @default(1.0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+}
+
+model TagWeight {
+  id        Int      @id @default(autoincrement())
+  tag       String   @unique
+  weight    Float    @default(1.0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+}
+
+model SearchCache {
+  id         Int      @id @default(autoincrement())
+  query      String
+  tsQuery    String   @map("ts_query")
+  results    Json
+  total      Int
+  analysis   Json
+  createdAt  DateTime @default(now()) @map("created_at")
+  expiresAt  DateTime @map("expires_at")
+
+  @@map("SearchCache")
+  @@index([query])
+  @@index([expiresAt])
+}
+
+model SearchHistory {
+  id                  Int      @id @default(autoincrement())
+  query               String
+  clicked_knowledge_id Int
+  clicked_position    Int
+  created_at          DateTime @default(now())
+  updated_at          DateTime @default(now()) @updatedAt
+}

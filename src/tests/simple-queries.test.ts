@@ -67,7 +67,8 @@ describe('単純なクエリのテスト', () => {
       const result = await analyzeInquiry(query);
       const response = generateDateSpecificResponse(result);
       
-      expect(response).toContain('大型車に関する注意事項');
+      expect(response).toContain('料金に関する注意事項');
+      expect(response).toContain('大型車料金が適用されます');
       expect(response).toContain('車両サイズ');
     });
   });

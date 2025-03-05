@@ -1,163 +1,146 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { generateSearchKeywords, generateTsQuery } from '@/lib/kuromoji-utils';
+import { generateSearchKeywords } from '@/lib/kuromoji-utils';
+import { detectAlertWords, checkAlertUsage } from '@/lib/alert-utils';
+import { extractDates, checkBusyPeriods, formatDateInfo } from '@/lib/date-utils';
+import { detectCategories, getMostRelevantCategory } from '@/lib/category-utils';
 import { SearchResult, SearchResponse } from '@/types/search';
 
 // サーバーサイドでのみ形態素解析を実行
 export const runtime = 'nodejs';
+
+async function performSearch(query: string, limit: number = 10): Promise<SearchResponse> {
+  // 1. アラートワード検出
+  const detectedAlerts = detectAlertWords(query);
+  const alertUsage = checkAlertUsage(detectedAlerts);
+
+  // 2. 日付検出と繁忙期チェック
+  const dates = extractDates(query);
+  const busyPeriods = await checkBusyPeriods(dates);
+
+  // 3. カテゴリ検出
+  const categories = detectCategories(query);
+  const mostRelevantCategory = getMostRelevantCategory(categories);
+
+  // 4. 形態素解析でキーワードを生成
+  const keywords = await generateSearchKeywords(query);
+  
+  // 5. tsQueryの生成（重み付けを考慮）
+  const tsQuery = keywords
+    .map((keyword: string) => `${keyword}:*`)
+    .join(' & ');
+
+  // 6. 重み付けを含む検索クエリ
+  const results = await prisma.$queryRaw<SearchResult[]>`
+    WITH search_results AS (
+      SELECT 
+        k.*,
+        ts_rank(search_vector, to_tsquery('japanese', ${tsQuery})) as text_rank,
+        COALESCE(cw.weight, 1.0) as category_weight,
+        COALESCE(
+          (
+            SELECT AVG(tw.weight)
+            FROM "KnowledgeTag" kt
+            JOIN "Tag" t ON kt.tag_id = t.id
+            JOIN "TagWeight" tw ON t.name = tw.tag
+            WHERE kt.knowledge_id = k.id
+          ),
+          1.0
+        ) as tag_weight
+      FROM "Knowledge" k
+      LEFT JOIN "CategoryWeight" cw ON k.main_category = cw.category
+      WHERE search_vector @@ to_tsquery('japanese', ${tsQuery})
+    )
+    SELECT 
+      id,
+      question,
+      answer,
+      main_category,
+      sub_category,
+      detail_category,
+      text_rank,
+      category_weight,
+      tag_weight,
+      (text_rank * category_weight * tag_weight) as final_score
+    FROM search_results
+    ORDER BY final_score DESC
+    LIMIT ${limit}
+  `;
+
+  // 7. タグ情報を取得
+  const resultsWithTags = await Promise.all(
+    results.map(async (result) => {
+      const knowledgeTags = await prisma.knowledgeTag.findMany({
+        where: {
+          knowledge_id: result.id,
+        },
+        select: {
+          tag: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      });
+
+      return {
+        ...result,
+        tags: knowledgeTags.map((kt) => kt.tag.name),
+        rank: result.final_score // 後方互換性のため
+      };
+    })
+  );
+
+  // 8. 検索結果の分析情報を追加
+  const analysis = {
+    alerts: {
+      detected: detectedAlerts,
+      usage: alertUsage
+    },
+    dates: {
+      detected: dates,
+      busyPeriods: busyPeriods.map(({ dateInfo, busyPeriod }) => ({
+        date: formatDateInfo(dateInfo),
+        description: busyPeriod.description
+      }))
+    },
+    categories: {
+      detected: categories,
+      mostRelevant: mostRelevantCategory
+    }
+  };
+
+  return {
+    results: resultsWithTags,
+    total: resultsWithTags.length,
+    query,
+    tsQuery,
+    analysis
+  };
+}
 
 export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
     const query = searchParams.get('query');
     const limit = parseInt(searchParams.get('limit') || '10', 10);
-    const offset = parseInt(searchParams.get('offset') || '0', 10);
 
     if (!query) {
       return NextResponse.json(
-        { error: 'Search query is required' },
+        { error: '検索クエリが必要です' },
         { status: 400 }
       );
     }
 
     // URLデコードを行う
     const decodedQuery = decodeURIComponent(query);
-    console.log('Search query:', decodedQuery);
-
-    // 検索クエリの生成
-    const keywords = await generateSearchKeywords(decodedQuery);
-    console.log('検索キーワード:', keywords);
-    
-    // tsQueryの生成
-    const tsQuery = keywords.map(k => `${k}:*`).join(' | ');
-    console.log('生成されたtsQuery:', tsQuery);
-    
-    // 全文検索クエリ
-    const searchQuery = `
-      SELECT 
-        k.id,
-        k.question,
-        k.answer,
-        k.main_category,
-        k.sub_category,
-        k.detail_category,
-        ts_rank_cd(
-          setweight(to_tsvector('japanese', k.answer), 'A') ||
-          setweight(to_tsvector('japanese', k.question), 'B') ||
-          setweight(to_tsvector('japanese', k.main_category), 'C') ||
-          setweight(to_tsvector('japanese', k.sub_category), 'C') ||
-          setweight(to_tsvector('japanese', k.detail_category), 'C'),
-          to_tsquery('japanese', $1)
-        ) as rank
-      FROM "Knowledge" k
-      WHERE 
-        to_tsvector('japanese', k.question) @@ to_tsquery('japanese', $1) OR
-        to_tsvector('japanese', k.answer) @@ to_tsquery('japanese', $1) OR
-        to_tsvector('japanese', k.main_category) @@ to_tsquery('japanese', $1) OR
-        to_tsvector('japanese', k.sub_category) @@ to_tsquery('japanese', $1) OR
-        to_tsvector('japanese', k.detail_category) @@ to_tsquery('japanese', $1)
-      ORDER BY rank DESC
-      LIMIT ${limit}
-    `;
-
-    // 全文検索を使用
-    const searchResults = await prisma.$queryRawUnsafe<SearchResult[]>(searchQuery, tsQuery);
-
-    console.log(`Found ${searchResults.length} results using full-text search`);
-
-    // 全文検索で結果が得られなかった場合は従来の検索方法を使用
-    if (searchResults.length === 0) {
-      console.log('全文検索で結果が得られなかったため、従来の検索方法を使用します');
-      
-      // より効率的なフォールバック検索
-      // 最も重要なフィールドに絞ってLIKE検索を行う
-      const mainKeyword = keywords[0]; // 最初のキーワードを使用
-      
-      const fallbackResults = await prisma.knowledge.findMany({
-        where: {
-          OR: [
-            { answer: { contains: mainKeyword } },
-            { question: { contains: mainKeyword } }
-          ]
-        },
-        take: limit,
-        skip: offset,
-        orderBy: {
-          id: 'asc' // 一貫性のある順序付け
-        }
-      });
-      
-      console.log(`Found ${fallbackResults.length} results using optimized fallback search`);
-      
-      // タグ情報を取得
-      const resultsWithTags = await Promise.all(
-        fallbackResults.map(async (result) => {
-          const knowledgeTags = await prisma.knowledgeTag.findMany({
-            where: {
-              knowledge_id: result.id,
-            },
-            select: {
-              tag: {
-                select: {
-                  name: true,
-                },
-              },
-            },
-          });
-
-          return {
-            ...result,
-            tags: knowledgeTags.map((kt) => kt.tag.name),
-            rank: 0.1 // フォールバック検索の結果には低いランクを設定
-          };
-        })
-      );
-
-      const response: SearchResponse = {
-        results: resultsWithTags,
-        total: resultsWithTags.length,
-        query: decodedQuery,
-        tsQuery: tsQuery
-      };
-
-      return NextResponse.json(response);
-    }
-
-    // タグ情報を取得
-    const resultsWithTags = await Promise.all(
-      searchResults.map(async (result) => {
-        const knowledgeTags = await prisma.knowledgeTag.findMany({
-          where: {
-            knowledge_id: result.id,
-          },
-          select: {
-            tag: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        });
-
-        return {
-          ...result,
-          tags: knowledgeTags.map((kt) => kt.tag.name),
-        };
-      })
-    );
-
-    const response: SearchResponse = {
-      results: resultsWithTags,
-      total: resultsWithTags.length,
-      query: decodedQuery,
-      tsQuery: tsQuery
-    };
-
+    const response = await performSearch(decodedQuery, limit);
     return NextResponse.json(response);
+
   } catch (error) {
-    console.error('Search error:', error);
+    console.error('検索エラー:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : String(error) },
+      { error: '検索中にエラーが発生しました' },
       { status: 500 }
     );
   }
@@ -165,151 +148,22 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { query, limit = 10, offset = 0 } = await req.json();
+    const { query, limit = 10 } = await req.json();
 
     if (!query) {
       return NextResponse.json(
-        { error: 'Search query is required' },
+        { error: '検索クエリが必要です' },
         { status: 400 }
       );
     }
 
-    console.log('Search query:', query);
-
-    // 検索クエリの生成
-    const keywords = await generateSearchKeywords(query);
-    console.log('検索キーワード:', keywords);
-    
-    // tsQueryの生成
-    const tsQuery = keywords.map(k => `${k}:*`).join(' | ');
-    console.log('生成されたtsQuery:', tsQuery);
-    
-    // 全文検索クエリ
-    const searchQuery = `
-      SELECT 
-        k.id,
-        k.question,
-        k.answer,
-        k.main_category,
-        k.sub_category,
-        k.detail_category,
-        ts_rank_cd(
-          setweight(to_tsvector('japanese', k.answer), 'A') ||
-          setweight(to_tsvector('japanese', k.question), 'B') ||
-          setweight(to_tsvector('japanese', k.main_category), 'C') ||
-          setweight(to_tsvector('japanese', k.sub_category), 'C') ||
-          setweight(to_tsvector('japanese', k.detail_category), 'C'),
-          to_tsquery('japanese', $1)
-        ) as rank
-      FROM "Knowledge" k
-      WHERE 
-        to_tsvector('japanese', k.question) @@ to_tsquery('japanese', $1) OR
-        to_tsvector('japanese', k.answer) @@ to_tsquery('japanese', $1) OR
-        to_tsvector('japanese', k.main_category) @@ to_tsquery('japanese', $1) OR
-        to_tsvector('japanese', k.sub_category) @@ to_tsquery('japanese', $1) OR
-        to_tsvector('japanese', k.detail_category) @@ to_tsquery('japanese', $1)
-      ORDER BY rank DESC
-      LIMIT ${limit}
-    `;
-
-    // 全文検索を使用
-    const searchResults = await prisma.$queryRawUnsafe<SearchResult[]>(searchQuery, tsQuery);
-
-    console.log(`Found ${searchResults.length} results using full-text search`);
-
-    // 全文検索で結果が得られなかった場合は従来の検索方法を使用
-    if (searchResults.length === 0) {
-      console.log('全文検索で結果が得られなかったため、従来の検索方法を使用します');
-      
-      // より効率的なフォールバック検索
-      // 最も重要なフィールドに絞ってLIKE検索を行う
-      const mainKeyword = keywords[0]; // 最初のキーワードを使用
-      
-      const fallbackResults = await prisma.knowledge.findMany({
-        where: {
-          OR: [
-            { answer: { contains: mainKeyword } },
-            { question: { contains: mainKeyword } }
-          ]
-        },
-        take: limit,
-        skip: offset,
-        orderBy: {
-          id: 'asc' // 一貫性のある順序付け
-        }
-      });
-      
-      console.log(`Found ${fallbackResults.length} results using optimized fallback search`);
-      
-      // タグ情報を取得
-      const resultsWithTags = await Promise.all(
-        fallbackResults.map(async (result) => {
-          const knowledgeTags = await prisma.knowledgeTag.findMany({
-            where: {
-              knowledge_id: result.id,
-            },
-            select: {
-              tag: {
-                select: {
-                  name: true,
-                },
-              },
-            },
-          });
-
-          return {
-            ...result,
-            tags: knowledgeTags.map((kt) => kt.tag.name),
-            rank: 0.1 // フォールバック検索の結果には低いランクを設定
-          };
-        })
-      );
-
-      const response: SearchResponse = {
-        results: resultsWithTags,
-        total: resultsWithTags.length,
-        query: query,
-        tsQuery: tsQuery
-      };
-
-      return NextResponse.json(response);
-    }
-
-    // タグ情報を取得
-    const resultsWithTags = await Promise.all(
-      searchResults.map(async (result) => {
-        const knowledgeTags = await prisma.knowledgeTag.findMany({
-          where: {
-            knowledge_id: result.id,
-          },
-          select: {
-            tag: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        });
-
-        return {
-          ...result,
-          tags: knowledgeTags.map((kt) => kt.tag.name),
-        };
-      })
-    );
-
-    const response: SearchResponse = {
-      results: resultsWithTags,
-      total: resultsWithTags.length,
-      query: query,
-      tsQuery: tsQuery
-    };
-
+    const response = await performSearch(query, limit);
     return NextResponse.json(response);
+
   } catch (error) {
-    console.error('Search error:', error);
+    console.error('検索エラー:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : String(error) },
+      { error: '検索中にエラーが発生しました' },
       { status: 500 }
     );
   }

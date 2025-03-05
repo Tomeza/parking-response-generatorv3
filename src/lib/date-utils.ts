@@ -199,4 +199,142 @@ export async function determineReservationStatus(startDate: Date, endDate: Date,
     canAcceptReservation,
     rejectionReason
   };
+}
+
+export interface DateInfo {
+  date: Date;
+  originalText: string;
+  format: 'YYYY年MM月DD日' | 'MM月DD日' | 'MM/DD';
+}
+
+export interface BusyPeriodInfo {
+  info_type: string;
+  start_date: Date;
+  end_date: Date;
+  description: string | null;
+}
+
+/**
+ * 問い合わせ文から日付を検出する
+ * @param query 検索クエリ
+ * @returns 検出された日付情報の配列
+ */
+export function extractDates(query: string): DateInfo[] {
+  const dates: DateInfo[] = [];
+  const now = new Date();
+  const currentYear = now.getFullYear();
+
+  // YYYY年MM月DD日形式の検出
+  const fullDatePattern = /(\d{4})年(\d{1,2})月(\d{1,2})日/g;
+  let match;
+  while ((match = fullDatePattern.exec(query)) !== null) {
+    const [fullMatch, year, month, day] = match;
+    dates.push({
+      date: new Date(parseInt(year), parseInt(month) - 1, parseInt(day)),
+      originalText: fullMatch,
+      format: 'YYYY年MM月DD日'
+    });
+  }
+
+  // MM月DD日形式の検出
+  const monthDayPattern = /(\d{1,2})月(\d{1,2})日/g;
+  while ((match = monthDayPattern.exec(query)) !== null) {
+    const [fullMatch, month, day] = match;
+    const date = new Date(currentYear, parseInt(month) - 1, parseInt(day));
+    // 過去の日付の場合は来年の日付として扱う
+    if (date < now) {
+      date.setFullYear(currentYear + 1);
+    }
+    dates.push({
+      date,
+      originalText: fullMatch,
+      format: 'MM月DD日'
+    });
+  }
+
+  // MM/DD形式の検出
+  const slashDatePattern = /(\d{1,2})\/(\d{1,2})/g;
+  while ((match = slashDatePattern.exec(query)) !== null) {
+    const [fullMatch, month, day] = match;
+    const date = new Date(currentYear, parseInt(month) - 1, parseInt(day));
+    // 過去の日付の場合は来年の日付として扱う
+    if (date < now) {
+      date.setFullYear(currentYear + 1);
+    }
+    dates.push({
+      date,
+      originalText: fullMatch,
+      format: 'MM/DD'
+    });
+  }
+
+  return dates;
+}
+
+/**
+ * 日付が繁忙期に該当するかチェックする
+ * @param date チェックする日付
+ * @returns 繁忙期情報（該当する場合）またはnull
+ */
+export async function checkBusyPeriod(date: Date): Promise<BusyPeriodInfo | null> {
+  const busyPeriod = await prisma.seasonalInfo.findFirst({
+    where: {
+      info_type: 'busy_period',
+      start_date: {
+        lte: date
+      },
+      end_date: {
+        gte: date
+      }
+    }
+  });
+
+  return busyPeriod;
+}
+
+/**
+ * 複数の日付をチェックし、繁忙期に該当する日付を返す
+ * @param dates チェックする日付の配列
+ * @returns 繁忙期に該当する日付とその情報の配列
+ */
+export async function checkBusyPeriods(dates: DateInfo[]): Promise<Array<{
+  dateInfo: DateInfo;
+  busyPeriod: BusyPeriodInfo;
+}>> {
+  const results = await Promise.all(
+    dates.map(async (dateInfo) => {
+      const busyPeriod = await checkBusyPeriod(dateInfo.date);
+      if (busyPeriod) {
+        return {
+          dateInfo,
+          busyPeriod
+        };
+      }
+      return null;
+    })
+  );
+
+  return results.filter((result): result is NonNullable<typeof result> => result !== null);
+}
+
+/**
+ * 日付情報を文字列に変換する
+ * @param dateInfo 日付情報
+ * @returns フォーマットされた日付文字列
+ */
+export function formatDateInfo(dateInfo: DateInfo): string {
+  const year = dateInfo.date.getFullYear();
+  const month = dateInfo.date.getMonth() + 1;
+  const day = dateInfo.date.getDate();
+
+  switch (dateInfo.format) {
+    case 'YYYY年MM月DD日':
+      return `${year}年${month}月${day}日`;
+    case 'MM月DD日':
+      return `${month}月${day}日`;
+    case 'MM/DD':
+      return `${month}/${day}`;
+    default:
+      return dateInfo.originalText;
+  }
 } 
