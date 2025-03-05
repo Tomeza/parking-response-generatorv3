@@ -1,61 +1,65 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon, ExclamationTriangleIcon, LightBulbIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 
-interface StepContent {
-  [key: string]: any;
-}
-
-interface Step {
-  step: string;
-  content: StepContent;
+export interface ProcessStep {
+  id: string;
+  title: string;
+  description: string;
+  type: 'alert' | 'knowledge' | 'suggestion';
+  content: any;
 }
 
 interface ProcessStepsProps {
-  steps: Step[] | null;
+  steps: ProcessStep[] | null;
   isLoading: boolean;
 }
 
 export default function ProcessSteps({ steps, isLoading }: ProcessStepsProps) {
-  const [expandedSteps, setExpandedSteps] = useState<Record<number, boolean>>({});
-  const [visibleSteps, setVisibleSteps] = useState<number[]>([]);
+  const [expandedSteps, setExpandedSteps] = useState<Record<string, boolean>>({});
+  const [visibleSteps, setVisibleSteps] = useState<number>(0);
 
-  // ステップが更新されたら、アニメーション用の表示ステップを更新
   useEffect(() => {
-    if (steps) {
-      const showSteps = () => {
-        const newVisibleSteps: number[] = [];
-        steps.forEach((_, index) => {
-          setTimeout(() => {
-            setVisibleSteps(prev => [...prev, index]);
-          }, index * 500); // 500msごとにステップを表示
-        });
-        return newVisibleSteps;
-      };
+    if (steps && steps.length > 0) {
+      // Reset expanded steps when new steps come in
+      setExpandedSteps({});
       
-      setVisibleSteps([]);
-      showSteps();
+      // Animate steps appearing one by one
+      let count = 0;
+      const interval = setInterval(() => {
+        if (count < steps.length) {
+          count++;
+          setVisibleSteps(count);
+        } else {
+          clearInterval(interval);
+        }
+      }, 300);
+      
+      return () => clearInterval(interval);
+    } else {
+      setVisibleSteps(0);
     }
   }, [steps]);
 
-  const toggleStep = (index: number) => {
+  const toggleStep = (id: string) => {
     setExpandedSteps(prev => ({
       ...prev,
-      [index]: !prev[index]
+      [id]: !prev[id]
     }));
   };
 
   if (isLoading) {
     return (
-      <div className="w-full mt-4 space-y-4">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-700 rounded w-1/3 mb-2"></div>
-          <div className="h-24 bg-gray-700 rounded"></div>
-        </div>
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-700 rounded w-1/3 mb-2"></div>
-          <div className="h-24 bg-gray-700 rounded"></div>
+      <div className="card w-full animate-pulse">
+        <div className="h-6 bg-gray-700 rounded w-1/3 mb-6"></div>
+        <div className="space-y-4">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="border border-gray-700 rounded-lg p-4">
+              <div className="h-5 bg-gray-700 rounded w-1/2 mb-3"></div>
+              <div className="h-4 bg-gray-700 rounded w-3/4"></div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -65,140 +69,126 @@ export default function ProcessSteps({ steps, isLoading }: ProcessStepsProps) {
     return null;
   }
 
+  const getStepIcon = (type: string) => {
+    switch (type) {
+      case 'alert':
+        return <ExclamationTriangleIcon className="h-5 w-5 text-amber-500" />;
+      case 'knowledge':
+        return <DocumentTextIcon className="h-5 w-5 text-blue-500" />;
+      case 'suggestion':
+        return <LightBulbIcon className="h-5 w-5 text-green-500" />;
+      default:
+        return null;
+    }
+  };
+
+  const getStepBorderColor = (type: string) => {
+    switch (type) {
+      case 'alert':
+        return 'border-amber-900/50';
+      case 'knowledge':
+        return 'border-blue-900/50';
+      case 'suggestion':
+        return 'border-green-900/50';
+      default:
+        return 'border-gray-700';
+    }
+  };
+
+  const getStepBgColor = (type: string) => {
+    switch (type) {
+      case 'alert':
+        return 'bg-amber-950/30';
+      case 'knowledge':
+        return 'bg-blue-950/30';
+      case 'suggestion':
+        return 'bg-green-950/30';
+      default:
+        return '';
+    }
+  };
+
   return (
-    <div className="w-full mt-4 space-y-4">
-      {steps.map((step, index) => (
-        <div
-          key={index}
-          className={`bg-gray-800 rounded-lg p-4 border border-gray-700 transition-opacity duration-500 ${
-            visibleSteps.includes(index) ? 'opacity-100' : 'opacity-0'
-          }`}
-        >
-          <div
-            className="flex justify-between items-center cursor-pointer"
-            onClick={() => toggleStep(index)}
+    <div className="card w-full">
+      <h2 className="text-lg font-medium text-gray-200 mb-4">処理ステップ</h2>
+      <div className="space-y-3">
+        {steps.map((step, index) => (
+          <div 
+            key={step.id}
+            className={`border rounded-lg overflow-hidden transition-all duration-300 ease-in-out ${
+              getStepBorderColor(step.type)
+            } ${getStepBgColor(step.type)} ${
+              index < visibleSteps ? 'opacity-100 transform-none' : 'opacity-0 translate-y-4'
+            }`}
+            style={{ transitionDelay: `${index * 150}ms` }}
           >
-            <h3 className="text-lg font-medium">
-              ステップ{index + 1}: {step.step}
-            </h3>
-            {expandedSteps[index] ? (
-              <ChevronUpIcon className="h-5 w-5" />
-            ) : (
-              <ChevronDownIcon className="h-5 w-5" />
-            )}
-          </div>
-          
-          {expandedSteps[index] && (
-            <div className="mt-4 text-sm">
-              {step.step === 'アラートワード検出' && (
-                <div className="space-y-2">
-                  <h4 className="font-medium">検出されたアラートワード:</h4>
-                  {Object.keys(step.content.detected).length > 0 ? (
-                    <ul className="list-disc list-inside">
-                      {Object.keys(step.content.detected).map((word) => (
-                        <li key={word} className="text-blue-400">{word}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-gray-400">検出されたアラートワードはありません</p>
-                  )}
-                  
-                  {step.content.dates && step.content.dates.length > 0 && (
-                    <>
-                      <h4 className="font-medium mt-3">検出された日付:</h4>
-                      <ul className="list-disc list-inside">
-                        {step.content.dates.map((dateInfo: any, i: number) => (
-                          <li key={i} className="text-yellow-400">
-                            {dateInfo.date}: {dateInfo.type} - {dateInfo.description}
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
-                  
-                  <h4 className="font-medium mt-3">不足しているアラートワード:</h4>
-                  {step.content.missing.length > 0 ? (
-                    <ul className="list-disc list-inside">
-                      {step.content.missing.map((word: string) => (
-                        <li key={word} className="text-gray-400">{word}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-gray-400">不足しているアラートワードはありません</p>
-                  )}
+            <div 
+              className="flex items-center justify-between p-4 cursor-pointer"
+              onClick={() => toggleStep(step.id)}
+            >
+              <div className="flex items-center space-x-3">
+                {getStepIcon(step.type)}
+                <div>
+                  <h3 className="font-medium text-gray-200">{step.title}</h3>
+                  <p className="text-sm text-gray-400">{step.description}</p>
                 </div>
-              )}
-              
-              {step.step === 'ナレッジ検索' && (
-                <div className="space-y-2">
-                  <h4 className="font-medium">使用されたナレッジ:</h4>
-                  {step.content.used.length > 0 ? (
-                    <div className="space-y-2">
-                      {step.content.used.map((knowledge: any) => (
-                        <div key={knowledge.id} className="bg-gray-700 p-2 rounded">
-                          <p className="text-xs text-gray-400">ID: {knowledge.id} | カテゴリ: {knowledge.category}</p>
-                          <p className="mt-1">{knowledge.answer}</p>
-                          {knowledge.tags && knowledge.tags.length > 0 && (
-                            <div className="mt-1 flex flex-wrap gap-1">
-                              {knowledge.tags.map((tag: string) => (
-                                <span key={tag} className="bg-blue-900 text-xs px-2 py-1 rounded">
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-gray-400">使用されたナレッジはありません</p>
-                  )}
-                  
-                  <h4 className="font-medium mt-3">不足しているタグ:</h4>
-                  {step.content.missing.length > 0 ? (
-                    <div className="flex flex-wrap gap-1">
-                      {step.content.missing.map((tag: string) => (
-                        <span key={tag} className="bg-gray-700 text-xs px-2 py-1 rounded">
-                          {tag}
+              </div>
+              <ChevronDownIcon 
+                className={`h-5 w-5 text-gray-400 transition-transform ${
+                  expandedSteps[step.id] ? 'transform rotate-180' : ''
+                }`} 
+              />
+            </div>
+            
+            {expandedSteps[step.id] && (
+              <div className="px-4 pb-4 pt-1 border-t border-gray-800">
+                {step.type === 'alert' && step.content.alertWords && (
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-300 mb-2">検出された注意ワード:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {step.content.alertWords.map((word: string, i: number) => (
+                        <span key={i} className="px-2 py-1 bg-amber-900/30 text-amber-300 text-xs rounded-full">
+                          {word}
                         </span>
                       ))}
                     </div>
-                  ) : (
-                    <p className="text-gray-400">不足しているタグはありません</p>
-                  )}
-                </div>
-              )}
-              
-              {step.step === 'トレース' && (
-                <div className="space-y-2">
-                  <h4 className="font-medium">ステータス:</h4>
-                  <p className={step.content.success ? 'text-green-400' : 'text-red-400'}>
-                    {step.content.success ? '成功' : '失敗'}
-                  </p>
-                  
-                  <h4 className="font-medium mt-3">改善提案:</h4>
-                  {step.content.suggestions.length > 0 ? (
-                    <ul className="list-disc list-inside">
+                  </div>
+                )}
+                
+                {step.type === 'knowledge' && step.content.knowledge && (
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-300 mb-2">使用されたナレッジ:</p>
+                    <div className="space-y-3">
+                      {step.content.knowledge.map((k: any, i: number) => (
+                        <div key={i} className="bg-gray-800 p-3 rounded-md">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs font-medium px-2 py-0.5 bg-blue-900/50 text-blue-300 rounded">
+                              {k.tags?.join(', ') || 'タグなし'}
+                            </span>
+                            <span className="text-xs text-gray-400">ID: {k.id}</span>
+                          </div>
+                          <p className="text-sm text-gray-300">{k.content}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {step.type === 'suggestion' && step.content.suggestions && (
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-300 mb-2">改善のための提案:</p>
+                    <ul className="list-disc list-inside space-y-2 text-sm text-gray-300 pl-2">
                       {step.content.suggestions.map((suggestion: string, i: number) => (
-                        <li key={i} className="text-yellow-400">{suggestion}</li>
+                        <li key={i}>{suggestion}</li>
                       ))}
                     </ul>
-                  ) : (
-                    <p className="text-gray-400">改善提案はありません</p>
-                  )}
-                </div>
-              )}
-              
-              {step.step === 'テンプレート適用' && (
-                <div className="space-y-2">
-                  <h4 className="font-medium">適用理由:</h4>
-                  <p className="text-gray-300">{step.content.reason}</p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 } 
