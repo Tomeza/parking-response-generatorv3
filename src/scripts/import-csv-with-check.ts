@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as csv from 'csv-parser';
+import csvParser from 'csv-parser';
 
 const prisma = new PrismaClient();
 
@@ -20,10 +20,10 @@ async function importCsvWithCheck() {
   // CSVファイルを読み込む
   await new Promise<void>((resolve, reject) => {
     fs.createReadStream(csvFilePath)
-      .pipe(csv())
-      .on('data', (data) => records.push(data))
+      .pipe(csvParser())
+      .on('data', (data: any) => records.push(data))
       .on('end', () => resolve())
-      .on('error', (error) => reject(error));
+      .on('error', (error: Error) => reject(error));
   });
   
   console.log(`${records.length}件のレコードをCSVから読み込みました。`);
