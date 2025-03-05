@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
-import { detectDates, detectAlertWords, tokenizeJapanese } from '@/lib/utils';
+import { detectDates, detectAlertWords } from '@/lib/utils';
+import { extractKeywords, analyzeText } from '@/lib/tokenizer';
+import { Prisma } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
   try {
@@ -88,35 +90,92 @@ async function processQuery(query: string) {
   }
 
   // ステップ2: ナレッジ検索
-  // 簡易的な形態素解析
-  const tokens = tokenizeJapanese(query);
+  // 高度な形態素解析を使用してキーワードを抽出
+  const keywords = await extractKeywords(query);
+  const analyzedText = await analyzeText(query);
   
-  // 関連するナレッジを検索
-  const knowledgeEntries = await prisma.knowledge.findMany({
-    where: {
-      OR: [
-        { question: { contains: query } },
-        { answer: { contains: query } },
-        ...tokens.map(token => ({
-          OR: [
-            { question: { contains: token } },
-            { answer: { contains: token } },
-            { main_category: { contains: token } },
-            { sub_category: { contains: token } },
-            { detail_category: { contains: token } },
-          ],
-        })),
-      ],
-    },
-    include: {
-      knowledge_tags: {
-        include: {
-          tag: true,
+  // 重み付けされたキーワードを取得
+  const weightedKeywords = analyzedText
+    .filter(item => item.weight >= 1.0) // 重要度が一定以上のキーワードのみ使用
+    .map(item => item.keyword);
+  
+  // PostgreSQL全文検索用のtsqueryを構築
+  const tsQuery = weightedKeywords.length > 0 
+    ? weightedKeywords.join(' | ') 
+    : query.replace(/\s+/g, ' | ');
+  
+  // 全文検索を使用してナレッジを検索
+  const rawQuery = Prisma.sql`
+    SELECT 
+      k.id, 
+      k.main_category, 
+      k.sub_category, 
+      k.detail_category, 
+      k.question, 
+      k.answer, 
+      k.is_template, 
+      k.usage, 
+      k.note, 
+      k.issue,
+      ts_rank(k.search_vector, to_tsquery('japanese', ${tsQuery})) AS rank
+    FROM "Knowledge" k
+    WHERE k.search_vector @@ to_tsquery('japanese', ${tsQuery})
+    ORDER BY rank DESC
+    LIMIT 5
+  `;
+  
+  const knowledgeResults = await prisma.$queryRaw(rawQuery);
+  
+  // 結果をPrismaの型に合わせて整形
+  const knowledgeEntries = await Promise.all(
+    (knowledgeResults as any[]).map(async (k) => {
+      const knowledgeTags = await prisma.knowledgeTag.findMany({
+        where: { knowledge_id: k.id },
+        include: { tag: true },
+      });
+      
+      return {
+        ...k,
+        knowledge_tags: knowledgeTags,
+      };
+    })
+  );
+  
+  // フォールバック: 全文検索で結果が得られなかった場合は従来の検索方法を使用
+  if (knowledgeEntries.length === 0) {
+    console.log('全文検索で結果が得られなかったため、従来の検索方法を使用します');
+    
+    const fallbackEntries = await prisma.knowledge.findMany({
+      where: {
+        OR: [
+          { question: { contains: query } },
+          { answer: { contains: query } },
+          ...keywords.map(keyword => ({
+            OR: [
+              { question: { contains: keyword } },
+              { answer: { contains: keyword } },
+              { main_category: { contains: keyword } },
+              { sub_category: { contains: keyword } },
+              { detail_category: { contains: keyword } },
+            ],
+          })),
+        ],
+      },
+      include: {
+        knowledge_tags: {
+          include: {
+            tag: true,
+          },
         },
       },
-    },
-    take: 5, // 上位5件のみ
-  });
+      take: 5,
+    });
+    
+    // 結果があれば使用
+    if (fallbackEntries.length > 0) {
+      Object.assign(knowledgeEntries, fallbackEntries);
+    }
+  }
 
   // 使用するナレッジと使用しないナレッジを分類
   const usedKnowledge = knowledgeEntries.filter(k => k.usage !== '✖️');
@@ -125,17 +184,17 @@ async function processQuery(query: string) {
   // 不足しているタグを特定
   const allTags = await prisma.tag.findMany();
   const usedTags = new Set(
-    usedKnowledge.flatMap(k => k.knowledge_tags.map(kt => kt.tag.tag_name))
+    usedKnowledge.flatMap(k => k.knowledge_tags.map((kt: { tag: { name: string } }) => kt.tag.name))
   );
   const missingTags = allTags
-    .filter(tag => !usedTags.has(tag.tag_name))
+    .filter(tag => !usedTags.has(tag.name))
     .slice(0, 5); // 上位5件のみ
 
   // ステップ3: トレースと改善提案
   const suggestions = [];
 
   if (missingTags.length > 0) {
-    suggestions.push(`タグの追加: ${missingTags.map(t => t.tag_name).join(', ')}`);
+    suggestions.push(`タグの追加: ${missingTags.map(t => t.name).join(', ')}`);
   }
 
   if (missingAlerts.length > 0) {
@@ -183,12 +242,12 @@ async function processQuery(query: string) {
   }
 
   // レスポンスログを保存
-  await prisma.responseLog.create({
+  const responseLog = await prisma.responseLog.create({
     data: {
       query,
       response: template.answer,
       used_knowledge_ids: usedKnowledge.map(k => k.id),
-      missing_tags: missingTags.map(t => t.tag_name),
+      missing_tags: missingTags.map(t => t.name),
       missing_alerts: missingAlerts.map(a => a.word),
       created_at: new Date(),
     },
@@ -199,12 +258,13 @@ async function processQuery(query: string) {
   const knowledgeArray = usedKnowledge.map(k => ({
     id: k.id,
     content: k.answer,
-    tags: k.knowledge_tags.map(kt => kt.tag.tag_name),
+    tags: k.knowledge_tags.map((kt: { tag: { name: string } }) => kt.tag.name),
   }));
 
   // 結果を返す
   return NextResponse.json({
     response: template.answer,
+    responseId: responseLog.id,
     steps: {
       alertWords: alertWordsArray,
       knowledge: knowledgeArray,

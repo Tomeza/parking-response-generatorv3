@@ -9,13 +9,17 @@ interface ResponseDisplayProps {
   isLoading: boolean;
   onRefine: () => void;
   isRefining: boolean;
+  onFeedback?: (isPositive: boolean) => Promise<void>;
+  hasResponseId?: boolean;
 }
 
 export default function ResponseDisplay({
   response,
   isLoading,
   onRefine,
-  isRefining
+  isRefining,
+  onFeedback,
+  hasResponseId
 }: ResponseDisplayProps) {
   const [copied, setCopied] = useState(false);
   const [showMailConfirm, setShowMailConfirm] = useState(false);
@@ -109,6 +113,23 @@ export default function ResponseDisplay({
       <div className="bg-gray-900 p-5 rounded-lg whitespace-pre-wrap border border-gray-800 min-h-[300px] text-gray-200 leading-relaxed">
         {response}
       </div>
+
+      {hasResponseId && onFeedback && (
+        <div className="mt-4 flex justify-center space-x-4">
+          <button
+            onClick={() => onFeedback(true)}
+            className="btn btn-sm btn-success"
+          >
+            👍 役に立った
+          </button>
+          <button
+            onClick={() => onFeedback(false)}
+            className="btn btn-sm btn-error"
+          >
+            👎 改善が必要
+          </button>
+        </div>
+      )}
 
       {copied && (
         <div className="mt-3 flex items-center text-green-400 text-sm fade-in">

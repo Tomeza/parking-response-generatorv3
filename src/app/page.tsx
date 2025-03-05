@@ -8,6 +8,7 @@ import ProcessSteps from '@/components/ProcessSteps';
 export default function Home() {
   const [query, setQuery] = useState('');
   const [response, setResponse] = useState<string | null>(null);
+  const [responseId, setResponseId] = useState<number | null>(null);
   const [steps, setSteps] = useState<any[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefining, setIsRefining] = useState(false);
@@ -16,6 +17,7 @@ export default function Home() {
     setQuery(inputQuery);
     setIsLoading(true);
     setResponse(null);
+    setResponseId(null);
     setSteps(null);
 
     try {
@@ -33,6 +35,7 @@ export default function Home() {
 
       const data = await res.json();
       setResponse(data.response);
+      setResponseId(data.responseId);
       
       // Process steps data transformation
       if (data.steps) {
@@ -87,6 +90,29 @@ export default function Home() {
     }
   };
 
+  // フィードバック送信処理
+  const handleFeedback = async (isPositive: boolean) => {
+    if (!responseId) return;
+    
+    try {
+      const res = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ responseId, isPositive }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Feedback API request failed');
+      }
+      
+      // フィードバック送信成功の処理は ResponseDisplay コンポーネント内で行う
+    } catch (error) {
+      console.error('Feedback Error:', error);
+    }
+  };
+
   const handleRefine = async () => {
     if (!response) return;
     
@@ -133,6 +159,8 @@ export default function Home() {
             isLoading={isLoading} 
             onRefine={handleRefine}
             isRefining={isRefining}
+            onFeedback={handleFeedback}
+            hasResponseId={responseId !== null}
           />
         </div>
       </div>
