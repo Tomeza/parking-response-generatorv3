@@ -120,3 +120,12 @@ model AdminUser {
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 }
+
+model SearchSynonym {
+  id        Int      @id @default(autoincrement())
+  word      String   @db.VarChar(50)
+  synonym   String   @db.VarChar(50)
+  created_at DateTime @default(now())
+
+  @@unique([word, synonym])
+}

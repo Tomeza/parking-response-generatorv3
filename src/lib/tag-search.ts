@@ -3,7 +3,7 @@
  * 
  * タグの階層構造を活用した検索や、同義語を考慮した検索機能を提供します。
  */
-import { prisma } from './prisma';
+import { prisma } from './db.js';
 import { Knowledge, Tag, TagSynonym } from '@prisma/client';
 
 /**
@@ -11,6 +11,15 @@ import { Knowledge, Tag, TagSynonym } from '@prisma/client';
  */
 export type ExtendedTag = Tag & {
   tag_synonyms: TagSynonym[];
+};
+
+/**
+ * 検索結果型
+ */
+export type TagSearchResult = {
+  knowledge: Knowledge;
+  score: number;
+  matchedTags: string[];
 };
 
 /**
@@ -49,62 +58,289 @@ export async function findTagsByNames(tagNames: string[]): Promise<ExtendedTag[]
   });
   
   // 同義語からタグを検索
-  const synonymTags = await prisma.tagSynonym.findMany({
+  const synonymTags = await prisma.tag.findMany({
     where: {
-      synonym: {
-        in: tagNames
+      tag_synonyms: {
+        some: {
+          synonym: {
+            in: tagNames
+          }
+        }
       }
     },
     include: {
-      tag: {
-        include: {
-          tag_synonyms: true
+      tag_synonyms: true
+    }
+  });
+  
+  // 部分一致検索
+  const partialTags = await prisma.tag.findMany({
+    where: {
+      OR: tagNames.map(name => ({
+        tag_name: {
+          contains: name
         }
+      }))
+    },
+    include: {
+      tag_synonyms: true
+    }
+  });
+  
+  // 結果をマージして重複を除去
+  const allTags = [...exactTags, ...synonymTags, ...partialTags];
+  const uniqueTags: ExtendedTag[] = [];
+  
+  allTags.forEach(tag => {
+    if (!uniqueTags.some(t => t.id === tag.id)) {
+      uniqueTags.push(tag);
+    }
+  });
+  
+  return uniqueTags;
+}
+
+/**
+ * タグに基づいてナレッジを検索する関数
+ * 
+ * @param keyTerms 検索キーワード配列
+ * @returns 検索結果
+ */
+export async function searchKnowledgeByTags(keyTerms: string[]): Promise<TagSearchResult[]> {
+  try {
+    console.log('タグ検索キーワード:', keyTerms);
+    
+    if (keyTerms.length === 0) {
+      return [];
+    }
+    
+    // キーワードからタグを検索（同義語を含む）
+    const tags = await findTagsByNames(keyTerms);
+    console.log('検出されたタグ:', tags.map(t => t.tag_name));
+    
+    if (tags.length === 0) {
+      return [];
+    }
+    
+    // タグIDのリストを作成
+    const tagIds = tags.map(tag => tag.id);
+    
+    // タグに関連するナレッジを検索（カテゴリ情報も含む）
+    const knowledgeWithTags = await prisma.knowledge.findMany({
+      where: {
+        OR: [
+          {
+            knowledge_tags: {
+              some: {
+                tag_id: {
+                  in: tagIds
+                }
+              }
+            }
+          },
+          {
+            main_category: {
+              contains: keyTerms.join('|'),
+              mode: 'insensitive'
+            }
+          },
+          {
+            sub_category: {
+              contains: keyTerms.join('|'),
+              mode: 'insensitive'
+            }
+          },
+          {
+            detail_category: {
+              contains: keyTerms.join('|'),
+              mode: 'insensitive'
+            }
+          }
+        ]
+      },
+      include: {
+        knowledge_tags: {
+          include: {
+            tag: true
+          }
+        }
+      }
+    });
+    
+    // 検索結果にスコアを付与
+    const results: TagSearchResult[] = knowledgeWithTags.map(knowledge => {
+      // マッチしたタグを抽出
+      const matchedTags = knowledge.knowledge_tags
+        .filter(kt => tagIds.includes(kt.tag_id))
+        .map(kt => kt.tag.tag_name);
+      
+      // カテゴリの一致度を計算
+      const categoryScore = calculateCategoryMatchScore(knowledge, keyTerms);
+      
+      // スコアの計算（タグとカテゴリの両方を考慮）
+      const score = calculateTagScore(matchedTags, tags, keyTerms) * 0.6 + categoryScore * 0.4;
+      
+      return {
+        knowledge: {
+          id: knowledge.id,
+          main_category: knowledge.main_category,
+          sub_category: knowledge.sub_category,
+          detail_category: knowledge.detail_category,
+          question: knowledge.question,
+          answer: knowledge.answer,
+          is_template: knowledge.is_template,
+          usage: knowledge.usage,
+          note: knowledge.note,
+          issue: knowledge.issue,
+          createdAt: knowledge.createdAt,
+          updatedAt: knowledge.updatedAt,
+          search_vector: null
+        },
+        score,
+        matchedTags
+      };
+    });
+    
+    // スコアでソート
+    results.sort((a, b) => b.score - a.score);
+    
+    return results;
+  } catch (error) {
+    console.error('タグ検索エラー:', error);
+    return [];
+  }
+}
+
+/**
+ * カテゴリの一致度を計算する関数
+ */
+function calculateCategoryMatchScore(knowledge: Knowledge, keyTerms: string[]): number {
+  let score = 0;
+  
+  // メインカテゴリの一致度（重み: 0.5）
+  if (knowledge.main_category) {
+    const mainCategoryMatch = keyTerms.some(term => 
+      knowledge.main_category?.toLowerCase().includes(term.toLowerCase())
+    );
+    if (mainCategoryMatch) score += 0.5;
+  }
+  
+  // サブカテゴリの一致度（重み: 0.3）
+  if (knowledge.sub_category) {
+    const subCategoryMatch = keyTerms.some(term => 
+      knowledge.sub_category?.toLowerCase().includes(term.toLowerCase())
+    );
+    if (subCategoryMatch) score += 0.3;
+  }
+  
+  // 詳細カテゴリの一致度（重み: 0.2）
+  if (knowledge.detail_category) {
+    const detailCategoryMatch = keyTerms.some(term => 
+      knowledge.detail_category?.toLowerCase().includes(term.toLowerCase())
+    );
+    if (detailCategoryMatch) score += 0.2;
+  }
+  
+  return Math.min(score, 1.0);
+}
+
+/**
+ * タグに基づくスコアを計算する関数
+ * 
+ * @param matchedTags マッチしたタグ名の配列
+ * @param allTags 検出されたすべてのタグ
+ * @param keyTerms 検索キーワード
+ * @returns スコア（0.0〜1.0）
+ */
+function calculateTagScore(
+  matchedTags: string[],
+  allTags: ExtendedTag[],
+  keyTerms: string[]
+): number {
+  if (matchedTags.length === 0) {
+    return 0;
+  }
+  
+  // 基本スコア: マッチしたタグの数 / 全タグの数
+  const baseScore = matchedTags.length / allTags.length;
+  
+  // 完全一致ボーナス
+  let exactMatchBonus = 0;
+  matchedTags.forEach(tag => {
+    if (keyTerms.includes(tag)) {
+      exactMatchBonus += 0.2;
+    }
+  });
+  
+  // 同義語マッチボーナス
+  let synonymMatchBonus = 0;
+  matchedTags.forEach(tag => {
+    const tagInfo = allTags.find(t => t.tag_name === tag);
+    if (tagInfo?.tag_synonyms) {
+      const hasSynonymMatch = tagInfo.tag_synonyms.some(synonym => 
+        keyTerms.includes(synonym.synonym)
+      );
+      if (hasSynonymMatch) {
+        synonymMatchBonus += 0.1;
       }
     }
   });
   
-  // 同義語から取得したタグを追加（重複を除外）
-  const allTags: ExtendedTag[] = [...exactTags];
-  
-  synonymTags.forEach(synonym => {
-    if (!allTags.some(tag => tag.id === synonym.tag.id)) {
-      allTags.push(synonym.tag);
-    }
-  });
-  
-  // 部分一致検索（完全一致で見つからなかった場合）
-  if (allTags.length < tagNames.length) {
-    const remainingTagNames = tagNames.filter(
-      name => !exactTags.some(tag => tag.tag_name === name) && 
-              !synonymTags.some(syn => syn.synonym === name)
-    );
-    
-    if (remainingTagNames.length > 0) {
-      const partialTags = await prisma.tag.findMany({
-        where: {
-          OR: remainingTagNames.map(name => ({
-            tag_name: {
-              contains: name,
-              mode: 'insensitive'
-            }
-          }))
-        },
-        include: {
-          tag_synonyms: true
-        }
-      });
-      
-      // 部分一致で見つかったタグを追加（重複を除外）
-      partialTags.forEach(tag => {
-        if (!allTags.some(existingTag => existingTag.id === tag.id)) {
-          allTags.push(tag);
-        }
-      });
-    }
+  // 最終スコア（0.0〜1.0に正規化）
+  let finalScore = baseScore + exactMatchBonus + synonymMatchBonus;
+  if (finalScore > 1.0) {
+    finalScore = 1.0;
   }
   
-  return allTags;
+  return finalScore;
+}
+
+// 以下は旧バージョンの関数（互換性のために残す）
+export async function searchKnowledgeByTagsLegacy(query: string) {
+  try {
+    // クエリからタグを抽出
+    const tagNames = extractTagsFromQuery(query);
+    console.log('抽出されたタグ名:', tagNames);
+    
+    if (tagNames.length === 0) {
+      return [];
+    }
+    
+    // タグを検索
+    const tags = await findTagsByNames(tagNames);
+    console.log('検出されたタグ:', tags.map(t => t.tag_name));
+    
+    if (tags.length === 0) {
+      return [];
+    }
+    
+    // タグIDのリストを作成
+    const tagIds = tags.map(tag => tag.id);
+    
+    // タグに関連するナレッジを検索
+    const knowledgeWithTags = await prisma.knowledge.findMany({
+      where: {
+        knowledge_tags: {
+          some: {
+            tag_id: {
+              in: tagIds
+            }
+          }
+        }
+      }
+    });
+    
+    // 検索結果に関連度を付与
+    const results = knowledgeWithTags.map(knowledge => ({
+      ...knowledge,
+      relevance: 0.9 // タグベース検索には高い関連度を与える
+    }));
+    
+    return results;
+  } catch (error) {
+    console.error('タグ検索エラー:', error);
+    return [];
+  }
 }
 
 /**
@@ -228,37 +464,6 @@ export async function findTagsByHierarchy(hierarchy: string[]): Promise<Tag[]> {
   );
   
   return uniqueTags;
-}
-
-/**
- * 検索クエリに基づいてタグ検索を実行し、関連するナレッジを取得する関数
- * 
- * @param query 検索クエリ
- * @returns ナレッジの配列（関連度スコア付き）
- */
-export async function searchKnowledgeByTags(query: string): Promise<(Knowledge & { relevance: number })[]> {
-  // クエリからタグを抽出
-  const tagNames = extractTagsFromQuery(query);
-  
-  // タグ情報を取得
-  const tags = await findTagsByNames(tagNames);
-  
-  // 階層構造を持つタグを検索
-  const hierarchyTags: Tag[] = [];
-  for (const tagName of tagNames) {
-    if (tagName.includes('/')) {
-      const hierarchy = parseTagHierarchy(tagName);
-      const hTags = await findTagsByHierarchy(hierarchy);
-      hierarchyTags.push(...hTags);
-    }
-  }
-  
-  // 全てのタグIDを収集（重複を除外）
-  const allTagIds = [...tags, ...hierarchyTags].map(tag => tag.id);
-  const uniqueTagIds = [...new Set(allTagIds)];
-  
-  // タグに関連するナレッジを検索
-  return await findKnowledgeByTags(uniqueTagIds);
 }
 
 /**

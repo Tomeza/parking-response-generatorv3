@@ -7,13 +7,37 @@
  * 3. タグ検索機能の統合
  */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Knowledge } from '@prisma/client';
 import { searchKnowledge } from '../lib/search';
 import { extractDatesFromText, checkBusyPeriods, formatDateToJapanese } from '../lib/date-utils';
 import { searchKnowledgeByTags } from '../lib/tag-search';
 import { execSync } from 'child_process';
 
 const prisma = new PrismaClient();
+
+interface SearchResult extends Knowledge {
+  rank?: number;
+  ts_score?: number;
+  sim_score?: number;
+  tag_score?: number;
+  category_score?: number;
+  final_score?: number;
+  relevance?: number;
+}
+
+interface SearchResponse {
+  results: SearchResult[];
+  allResults: SearchResult[];
+  keyTerms: string[];
+  synonymExpanded: string[];
+  dates?: Date[];
+  busyPeriods?: any[];
+  hasBusyPeriod: boolean;
+}
+
+interface TagSearchResult extends Knowledge {
+  relevance: number;
+}
 
 // テスト用のクエリ
 const TEST_QUERIES = [
@@ -222,13 +246,13 @@ async function testTagSearch() {
     // タグ検索のテスト
     for (const query of TEST_QUERIES) {
       console.log(`クエリ: ${query}`);
-      const results = await searchKnowledgeByTags(query);
+      const results: TagSearchResult[] = await searchKnowledgeByTags([query]);
       console.log(`タグ検索結果: ${results.length}件`);
       
       if (results.length > 0) {
         console.log('上位3件:');
         results.slice(0, 3).forEach((result, index) => {
-          console.log(`${index + 1}. [${result.main_category}/${result.sub_category}] ${result.question || '(質問なし)'} (関連度: ${result.relevance})`);
+          console.log(`${index + 1}. [${result.main_category || 'なし'}/${result.sub_category || 'なし'}] ${result.question || '(質問なし)'} (関連度: ${result.relevance})`);
         });
       }
       console.log('---');
@@ -250,17 +274,34 @@ async function testIntegratedSearch() {
   
   try {
     for (const query of TEST_QUERIES) {
-      console.log(`クエリ: ${query}`);
-      const results = await searchKnowledge(query);
+      console.log(`\nクエリ: ${query}`);
       
-      if (results && results.length > 0) {
-        console.log(`検索結果: ${results.length}件`);
+      const results: SearchResponse | null = await searchKnowledge(query);
+      
+      if (results?.results && results.results.length > 0) {
+        console.log(`検索結果: ${results.results.length}件`);
         console.log('上位3件:');
-        results.slice(0, 3).forEach((result, index) => {
-          console.log(`${index + 1}. [${result.main_category}/${result.sub_category}] ${result.question || '(質問なし)'} (関連度: ${result.relevance})`);
+        results.results.slice(0, 3).forEach((result, index) => {
+          console.log(`${index + 1}. [${result.main_category || 'なし'}/${result.sub_category || 'なし'}] ${result.question || '(質問なし)'} (関連度: ${result.relevance || 0})`);
         });
+        
+        if (results.keyTerms.length > 0) {
+          console.log('抽出キーワード:', results.keyTerms.join(', '));
+        }
+        
+        if (results.synonymExpanded.length > 0) {
+          console.log('同義語展開:', results.synonymExpanded.join(', '));
+        }
+        
+        if (results.dates && results.dates.length > 0) {
+          console.log('検出された日付:', results.dates.map(d => formatDateToJapanese(d)).join(', '));
+        }
+        
+        if (results.hasBusyPeriod) {
+          console.log('⚠️ 繁忙期が検出されました');
+        }
       } else {
-        console.log('検索結果: 0件');
+        console.log('検索結果なし');
       }
       console.log('---');
     }

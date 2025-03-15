@@ -1,7 +1,7 @@
-const { Pool } = require('pg');
-const fs = require('fs');
-const path = require('path');
-const bcrypt = require('bcryptjs');
+import { Pool } from 'pg';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as bcrypt from 'bcryptjs';
 
 const pool = new Pool({
   host: process.env.POSTGRES_HOST || 'localhost',

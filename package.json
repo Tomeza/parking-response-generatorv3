@@ -1,14 +1,29 @@
 {
   "name": "parking-response-generatorv3",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
+  "type": "module",
+  "description": "",
+  "main": "index.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "ts-node prisma/seed.ts",
+    "import-data": "NODE_OPTIONS='--loader ts-node/esm' ts-node import-data.ts",
+    "import-tags": "NODE_OPTIONS='--loader ts-node/esm' ts-node import-tags.ts",
+    "add-synonyms": "NODE_OPTIONS='--loader ts-node/esm' ts-node add-synonyms.ts",
+    "add-complaint-tags": "NODE_OPTIONS='--loader ts-node/esm' ts-node add-complaint-tags.ts",
+    "test": "NODE_OPTIONS='--loader ts-node/esm' ts-node src/test-search.ts",
+    "check-knowledge": "NODE_OPTIONS='' ts-node --compiler-options '{\"module\":\"CommonJS\"}' src/check-knowledge.ts",
+    "test-cancel": "node test-cancel-queries.cjs",
+    "test-hours": "node test-hours-queries.cjs",
+    "test-complaint": "node test-complaint-queries.cjs"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
   },
@@ -34,7 +49,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20.17.23",
+    "@types/node": "^20.17.24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

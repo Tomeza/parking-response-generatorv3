@@ -2,6 +2,27 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { detectDates, detectAlertWords, tokenizeJapanese } from '@/lib/utils';
 import { searchKnowledge } from '@/lib/search';
+import { Knowledge } from '@prisma/client';
+
+interface SearchResult extends Knowledge {
+  rank?: number;
+  ts_score?: number;
+  sim_score?: number;
+  tag_score?: number;
+  category_score?: number;
+  final_score?: number;
+  relevance?: number;
+}
+
+interface SearchResponse {
+  results: SearchResult[];
+  allResults: SearchResult[];
+  keyTerms: string[];
+  synonymExpanded: string[];
+  dates?: Date[];
+  busyPeriods?: any[];
+  hasBusyPeriod: boolean;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,11 +40,11 @@ export async function GET(request: NextRequest) {
     }
 
     // ナレッジ検索
-    const results = await searchKnowledge(query);
+    const results: SearchResponse | null = await searchKnowledge(query);
     console.log('Search results in API:', results);
 
     // 結果が見つからない場合は、200ステータスでエラーメッセージを返す
-    if (!results || results.length === 0) {
+    if (!results?.results || results.results.length === 0) {
       console.log('No results found in API');
       return NextResponse.json({
         response: 'お問い合わせ内容に関する情報が見つかりませんでした。詳細な情報をご提供いただけますと、より適切なご案内ができます。',
@@ -40,7 +61,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 最も関連性の高い回答を返す
-    const bestMatch = results[0];
+    const bestMatch = results.results[0];
     console.log('Best match:', bestMatch);
 
     // レスポンスログを保存
@@ -91,9 +112,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const results = await searchKnowledge(query);
+    const results: SearchResponse | null = await searchKnowledge(query);
 
-    if (!results || results.length === 0) {
+    if (!results?.results || results.results.length === 0) {
       return NextResponse.json(
         { error: 'お問い合わせ内容に関する情報が見つかりませんでした。詳細な情報をご提供いただけますと、より適切なご案内ができます。' },
         { status: 404 }
@@ -101,7 +122,7 @@ export async function POST(request: Request) {
     }
 
     // 最も関連性の高い回答を返す
-    const bestMatch = results[0];
+    const bestMatch = results.results[0];
     return NextResponse.json({ answer: bestMatch.answer });
 
   } catch (error) {
