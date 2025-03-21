@@ -1,23 +1,45 @@
 {
   "name": "parking-response-generatorv3",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
+  "type": "module",
+  "description": "",
+  "main": "index.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "seed": "ts-node prisma/seed.ts",
+    "import-data": "NODE_OPTIONS='--loader ts-node/esm' ts-node import-data.ts",
+    "import-tags": "NODE_OPTIONS='--loader ts-node/esm' ts-node import-tags.ts",
+    "add-synonyms": "NODE_OPTIONS='--loader ts-node/esm' ts-node add-synonyms.ts",
+    "add-complaint-tags": "NODE_OPTIONS='--loader ts-node/esm' ts-node add-complaint-tags.ts",
+    "test": "NODE_OPTIONS='--loader ts-node/esm' ts-node src/test-search.ts",
+    "check-knowledge": "NODE_OPTIONS='' ts-node --compiler-options '{\"module\":\"CommonJS\"}' src/check-knowledge.ts",
+    "test-cancel": "node test-cancel-queries.cjs",
+    "test-hours": "node test-hours-queries.cjs",
+    "test-complaint": "node test-complaint-queries.cjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
+    "@auth/core": "^0.34.2",
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
     "@prisma/client": "^6.4.1",
     "@types/pg": "^8.11.11",
     "@types/react-datepicker": "^6.2.0",
     "@vercel/postgres": "^0.10.0",
+    "bcryptjs": "^3.0.2",
     "date-fns": "^4.1.0",
     "next": "15.2.0",
+    "next-auth": "^4.24.11",
     "pg": "^8.13.3",
     "prisma": "^6.4.1",
     "react": "^19.0.0",
@@ -27,12 +49,13 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^20.17.24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.2.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
   }
 }

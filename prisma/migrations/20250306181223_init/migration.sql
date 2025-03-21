@@ -1,3 +1,9 @@
+-- CreateExtension
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+
+-- CreateExtension
+CREATE EXTENSION IF NOT EXISTS "pgroonga";
+
 -- CreateTable
 CREATE TABLE "Knowledge" (
     "id" SERIAL NOT NULL,
@@ -10,6 +16,8 @@ CREATE TABLE "Knowledge" (
     "usage" VARCHAR(10),
     "note" TEXT,
     "issue" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Knowledge_pkey" PRIMARY KEY ("id")
 );
@@ -90,6 +98,27 @@ CREATE TABLE "TagSynonym" (
     CONSTRAINT "TagSynonym_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "SearchHistory" (
+    "id" SERIAL NOT NULL,
+    "query" TEXT NOT NULL,
+    "category" TEXT,
+    "tags" TEXT[],
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "SearchHistory_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE INDEX "Knowledge_question_answer_idx" ON "Knowledge"("question", "answer");
+
+-- CreateIndex
+CREATE INDEX "Knowledge_main_category_sub_category_idx" ON "Knowledge"("main_category", "sub_category");
+
+-- CreateIndex
+CREATE INDEX "Knowledge_detail_category_idx" ON "Knowledge"("detail_category");
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Tag_tag_name_key" ON "Tag"("tag_name");
 
@@ -98,6 +127,15 @@ CREATE UNIQUE INDEX "AlertWord_word_key" ON "AlertWord"("word");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "TagSynonym_tag_id_synonym_key" ON "TagSynonym"("tag_id", "synonym");
+
+-- CreateIndex
+CREATE INDEX "SearchHistory_query_idx" ON "SearchHistory"("query");
+
+-- CreateIndex
+CREATE INDEX "SearchHistory_category_idx" ON "SearchHistory"("category");
+
+-- CreateIndex
+CREATE INDEX "SearchHistory_tags_idx" ON "SearchHistory"("tags");
 
 -- AddForeignKey
 ALTER TABLE "KnowledgeTag" ADD CONSTRAINT "KnowledgeTag_knowledge_id_fkey" FOREIGN KEY ("knowledge_id") REFERENCES "Knowledge"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
