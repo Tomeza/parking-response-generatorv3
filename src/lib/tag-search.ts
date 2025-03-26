@@ -3,7 +3,7 @@
  * 
  * タグの階層構造を活用した検索や、同義語を考慮した検索機能を提供します。
  */
-import { prisma } from './db.js';
+import { prisma } from './db';
 import { Knowledge, Tag, TagSynonym } from '@prisma/client';
 
 /**
@@ -102,113 +102,58 @@ export async function findTagsByNames(tagNames: string[]): Promise<ExtendedTag[]
 
 /**
  * タグに基づいてナレッジを検索する関数
- * 
- * @param keyTerms 検索キーワード配列
- * @returns 検索結果
  */
-export async function searchKnowledgeByTags(keyTerms: string[]): Promise<TagSearchResult[]> {
-  try {
-    console.log('タグ検索キーワード:', keyTerms);
-    
-    if (keyTerms.length === 0) {
-      return [];
-    }
-    
-    // キーワードからタグを検索（同義語を含む）
-    const tags = await findTagsByNames(keyTerms);
-    console.log('検出されたタグ:', tags.map(t => t.tag_name));
-    
-    if (tags.length === 0) {
-      return [];
-    }
-    
-    // タグIDのリストを作成
-    const tagIds = tags.map(tag => tag.id);
-    
-    // タグに関連するナレッジを検索（カテゴリ情報も含む）
-    const knowledgeWithTags = await prisma.knowledge.findMany({
-      where: {
-        OR: [
-          {
-            knowledge_tags: {
-              some: {
-                tag_id: {
-                  in: tagIds
-                }
-              }
+export async function searchKnowledgeByTags(terms: string[]): Promise<TagSearchResult[]> {
+  if (!terms.length) return [];
+  
+  // タグとその同義語を検索
+  const tags = await prisma.tag.findMany({
+    where: {
+      OR: [
+        { tag_name: { in: terms } },
+        {
+          tag_synonyms: {
+            some: {
+              synonym: { in: terms }
             }
-          },
-          {
-            main_category: {
-              contains: keyTerms.join('|'),
-              mode: 'insensitive'
-            }
-          },
-          {
-            sub_category: {
-              contains: keyTerms.join('|'),
-              mode: 'insensitive'
-            }
-          },
-          {
-            detail_category: {
-              contains: keyTerms.join('|'),
-              mode: 'insensitive'
-            }
-          }
-        ]
-      },
-      include: {
-        knowledge_tags: {
-          include: {
-            tag: true
           }
         }
+      ]
+    },
+    include: {
+      knowledge_tags: {
+        include: {
+          knowledge: true
+        }
+      }
+    }
+  });
+  
+  // 結果をスコアリング
+  const results: TagSearchResult[] = [];
+  const knowledgeMap = new Map<string, TagSearchResult>();
+  
+  tags.forEach(tag => {
+    tag.knowledge_tags.forEach(kt => {
+      const knowledge = kt.knowledge;
+      const existing = knowledgeMap.get(knowledge.id.toString());
+      
+      if (existing) {
+        // 既存の結果のスコアを更新
+        existing.score += 1;
+      } else {
+        // 新しい結果を追加
+        knowledgeMap.set(knowledge.id.toString(), {
+          knowledge,
+          score: 1,
+          matchedTags: []
+        });
       }
     });
-    
-    // 検索結果にスコアを付与
-    const results: TagSearchResult[] = knowledgeWithTags.map(knowledge => {
-      // マッチしたタグを抽出
-      const matchedTags = knowledge.knowledge_tags
-        .filter(kt => tagIds.includes(kt.tag_id))
-        .map(kt => kt.tag.tag_name);
-      
-      // カテゴリの一致度を計算
-      const categoryScore = calculateCategoryMatchScore(knowledge, keyTerms);
-      
-      // スコアの計算（タグとカテゴリの両方を考慮）
-      const score = calculateTagScore(matchedTags, tags, keyTerms) * 0.6 + categoryScore * 0.4;
-      
-      return {
-        knowledge: {
-          id: knowledge.id,
-          main_category: knowledge.main_category,
-          sub_category: knowledge.sub_category,
-          detail_category: knowledge.detail_category,
-          question: knowledge.question,
-          answer: knowledge.answer,
-          is_template: knowledge.is_template,
-          usage: knowledge.usage,
-          note: knowledge.note,
-          issue: knowledge.issue,
-          createdAt: knowledge.createdAt,
-          updatedAt: knowledge.updatedAt,
-          search_vector: null
-        },
-        score,
-        matchedTags
-      };
-    });
-    
-    // スコアでソート
-    results.sort((a, b) => b.score - a.score);
-    
-    return results;
-  } catch (error) {
-    console.error('タグ検索エラー:', error);
-    return [];
-  }
+  });
+  
+  // マップから配列に変換
+  return Array.from(knowledgeMap.values());
 }
 
 /**

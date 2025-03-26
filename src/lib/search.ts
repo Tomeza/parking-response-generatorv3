@@ -1,7 +1,25 @@
-import { prisma } from './db.js';
+// 必要なモジュールのインポート
+import { PrismaClient, Prisma } from '@prisma/client';
+import { searchKnowledgeByTags } from './tag-search';
+import { prisma } from './db';
+
+// 新しいモジュールをインポート
+import { enhancedPreprocessQuery } from './query-processor';
+import { calculateScore, addSearchNotes } from './scoring';
+import { 
+  searchLuxuryCarParking, 
+  searchReservationChange, 
+  searchInternationalFlight
+} from './special-topic-search';
+
+// 共通型をインポート
+import { SearchResult } from './common-types';
+
 import { Knowledge, SeasonalInfo } from '@prisma/client';
-import { extractDatesFromText, checkBusyPeriods, formatDateToJapanese } from './date-utils.js';
-import { searchKnowledgeByTags } from './tag-search.js';
+import { extractDatesFromText, checkBusyPeriods, formatDateToJapanese } from './date-utils';
+
+// Prismaクライアントのインスタンスを作成
+const prismaClient = new PrismaClient();
 
 /**
  * 日本語検索クエリの前処理を行う関数
@@ -52,19 +70,22 @@ async function preprocessJapaneseQuery(query: string): Promise<{
   
   if (searchTerms.length > 1) {
     // OR検索用クエリ（部分一致）
-    orQuery = searchTerms.map(term => `${term}:*`).join(' | ');
+    orQuery = searchTerms.map(term => `${term}`).join(' | ');
     
     // AND検索用クエリ（完全一致）
     andQuery = searchTerms.map(term => `${term}`).join(' & ');
     
     // プレーンテキスト検索用クエリ
-    plainQuery = searchTerms.join(' & ');
+    plainQuery = searchTerms.join(' | ');
   } else if (searchTerms.length === 1) {
     plainQuery = searchTerms[0];
+    orQuery = searchTerms[0];
+    andQuery = searchTerms[0];
   }
   
-  // ステップ5: websearch_to_tsquery用のクエリを作成
-  const webSearchQuery = searchTerms.join(' | ');
+  // ステップ5: PGroonga検索用のクエリを作成
+  // 注意: PGroongaは独自の構文を持っています
+  const webSearchQuery = searchTerms.join(' OR ');
   
   return {
     cleanedQuery: normalized,
@@ -96,7 +117,9 @@ function extractKeyTerms(text: string): string[] {
 
   // 重要な単語のパターン
   const importantPatterns = [
-    /予約|キャンセル|料金|支払|駐車|送迎|車種|サイズ|営業|時間|方法|手続|手順/,
+    // 予約関連のパターンを強化
+    /予約|キャンセル|変更|修正|更新|訂正|手続|手順|方法/,
+    /料金|支払|駐車|送迎|車種|サイズ|営業|時間/,
     /オンライン|インターネット|ウェブ|スマホ|アプリ/,
     /国際線|国内線|到着|出発|帰国|出国/,
     /混雑|繁忙|ピーク|満車|空き/,
@@ -106,16 +129,40 @@ function extractKeyTerms(text: string): string[] {
     /精算|会計|決済|支払い/
   ];
 
+  // 予約変更関連の特別パターン（より広範囲なパターンをカバー）
+  const reservationChangePatterns = [
+    /予約.*変更|予約.*修正|予約.*更新|予約.*訂正/,
+    /変更.*予約|修正.*予約|更新.*予約|訂正.*予約/,
+    /予約内容.*変更|予約.*内容.*変更/,
+    /予約日程.*変更|予約日.*変更|予約時間.*変更/,
+    /送迎.*変更|車種.*変更|利用便.*変更|日付.*変更/,
+    /変更方法|変更手続き|変更手順|変更可能|変更できる/,
+    /日程変更|時間変更|内容変更|予約変|変予約|予変更/,
+  ];
+
   // 文字列を分割（助詞や句読点で区切る）
   const segments = text.split(/[はがのにへでとやもを、。．！？!?.\s]+/).filter(Boolean);
   
+  // 予約変更関連の複合語を抽出（高優先度）
+  const reservationChangeCompounds = [];
+  // 3単語までの複合語を検出
+  for (let i = 0; i < segments.length - 2; i++) {
+    for (let j = 1; j <= 3; j++) {
+      if (i + j < segments.length) {
+        const compound = segments.slice(i, i + j + 1).join('');
+        if (compound.length >= 3 && compound.length <= 15) {
+          if (reservationChangePatterns.some(pattern => pattern.test(compound))) {
+            reservationChangeCompounds.push(compound);
+          }
+        }
+      }
+    }
+  }
+  
   // 重要な用語を抽出
   const terms = segments
-    // 1文字以上の単語を抽出（2文字以上から変更）
     .filter(term => term.length >= 1)
-    // ストップワードを除外
     .filter(term => !commonStopwords.includes(term))
-    // 数字のみの単語を除外（ただし日付や時間の可能性があるものは保持）
     .filter(term => !/^\d+$/.test(term) || /\d+[月日時分]|\d+:\d+/.test(term));
 
   // 重要なパターンにマッチする単語を優先
@@ -123,47 +170,148 @@ function extractKeyTerms(text: string): string[] {
     importantPatterns.some(pattern => pattern.test(term))
   );
 
-  // 複合語の処理
+  // 予約変更関連の特別パターンにマッチする単語を追加
+  const reservationChangeTerms = terms.filter(term => 
+    reservationChangePatterns.some(pattern => pattern.test(term))
+  );
+  
+  // 元の複合語の処理
   const compounds = [];
   for (let i = 0; i < segments.length - 1; i++) {
     const compound = segments[i] + segments[i + 1];
-    if (compound.length >= 3 && compound.length <= 10 && 
-        importantPatterns.some(pattern => pattern.test(compound))) {
-      compounds.push(compound);
+    if (compound.length >= 3 && compound.length <= 10) {
+      // 予約変更関連の複合語を優先
+      if (reservationChangePatterns.some(pattern => pattern.test(compound))) {
+        compounds.unshift(compound);
+      } else if (importantPatterns.some(pattern => pattern.test(compound))) {
+        compounds.push(compound);
+      }
     }
   }
 
-  // 結果を結合して重複を除去
-  const allTerms = [...new Set([...importantTerms, ...compounds, ...terms])];
+  // "予約変更"が含まれるか確認し、含まれていれば最優先で追加
+  if (text.includes('予約変更') || text.includes('予約の変更') || text.includes('予約内容を変更')) {
+    reservationChangeTerms.unshift('予約変更');
+  }
+
+  // 結果を結合して重複を除去（予約変更関連の用語を優先）
+  const allTerms = [...new Set([
+    ...reservationChangeCompounds,
+    ...reservationChangeTerms, 
+    ...importantTerms, 
+    ...compounds, 
+    ...terms
+  ])];
   
-  // 上位20語に制限（15語から増やす）
   return allTerms.slice(0, 20);
 }
 
 /**
  * 特別な重要キーワードを抽出する関数
- * 「オンライン」「駐車場」などの特定の重要単語を検出
+ * "オンライン" "駐車場"などの特定の重要単語を検出
  */
 function extractSpecialTerms(text: string): string[] {
+  // 最重要キーワード（特別な処理が必要なもの）
   const specialKeywords = [
+    // 既存のキーワード
     'オンライン', '駐車場', '予約', 'キャンセル', '料金', '支払い', '送迎', '車種', 'サイズ',
     '国際線', 'インターナショナル', '朝帰国', 'レクサス', '外車', 'BMW', 'ベンツ', 'アウディ',
     '満車', '空き', '定員', '人数', '繁忙期', '混雑', 'ピーク',
-    '営業時間', '営業', '開店', '閉店', '営業日', '休業日',
+    // 追加するキーワード
+    '営業時間', '営業', '開店', '閉店', '営業日', '休業日', '深夜', '24時間',
+    '何時から', '何時まで', '利用時間', '駐車時間', '営業開始', '営業終了',
     '領収書', 'レシート', '明細', '証明書',
     '割引', 'クーポン', 'ディスカウント', '特典',
     '精算', '会計', '決済', 'カード', '現金', '電子マネー',
-    '解約', '取り消し', '返金'
+    '解約', '取り消し', '返金',
+    // 予約変更関連のキーワード（優先度アップ）
+    '予約変更', '予約の変更', '予約内容の変更', '予約の修正',
+    '予約の更新', '予約の訂正', '予約の修正方法', '予約の変更手続き',
+    '送迎変更', '車種変更', '利用便変更', '日付変更', '時間変更',
+    '変更方法', '変更手続き', '変更手順', '変更可能', '変更できる',
+    '予約日程変更', '予約日変更', '予約時間変更',
+    // 外車・大型車関連のキーワード（追加）
+    '大型車', '外車', '大型車両', '大型', '輸入車', '高級車', '大型高級車',
+    '外国産', '輸入自動車', '大型サイズ', '大型料金', 'サイズ超過', '車両サイズ'
   ];
   
   const foundTerms: string[] = [];
   
-  // 特別キーワードの検出
+  // 最重要キーワードの検出（優先）
   specialKeywords.forEach(keyword => {
     if (text.includes(keyword)) {
-      foundTerms.push(keyword);
+      // 外車関連のキーワードを先頭に追加
+      if (keyword === '外車' || keyword === '輸入車' || keyword === 'BMW' || keyword === 'ベンツ' || keyword === 'アウディ') {
+        foundTerms.unshift(keyword);
+      } 
+      // 大型車関連のキーワードを優先
+      else if (keyword === '大型車' || keyword === '大型車両' || keyword === '大型サイズ' || keyword === 'サイズ超過') {
+        foundTerms.unshift(keyword);
+      }
+      // 予約変更関連のキーワードを先頭に追加
+      else if (keyword.includes('予約') && keyword.includes('変更')) {
+        foundTerms.unshift(keyword);
+      } else {
+        foundTerms.push(keyword);
+      }
     }
   });
+  
+  // 複合キーワードの検出
+  if (text.includes('国際線') && (text.includes('利用') || text.includes('使え') || text.includes('使用') || text.includes('可能'))) {
+    foundTerms.push('国際線利用');
+  }
+  
+  // キャンセル関連の複合キーワード検出
+  if (text.includes('キャンセル') && (text.includes('ルール') || text.includes('規約') || text.includes('規則') || text.includes('ポリシー'))) {
+    foundTerms.push('キャンセルルール');
+  }
+  
+  if (text.includes('キャンセル') && (text.includes('料金') || text.includes('料') || text.includes('費用'))) {
+    foundTerms.push('キャンセル料');
+  }
+  
+  if (text.includes('予約') && text.includes('キャンセル')) {
+    foundTerms.push('予約キャンセル');
+  }
+  
+  // 予約変更関連の複合キーワード検出（より広範なパターンをカバー）
+  if (text.includes('予約') && (text.includes('変更') || text.includes('修正') || text.includes('更新') || text.includes('訂正'))) {
+    foundTerms.unshift('予約変更');
+  }
+  
+  if (text.includes('予約内容') && text.includes('変更')) {
+    foundTerms.unshift('予約内容変更');
+  }
+  
+  if (text.includes('予約日程') && text.includes('変更')) {
+    foundTerms.unshift('予約日程変更');
+  }
+  
+  if (text.includes('送迎') && text.includes('変更')) {
+    foundTerms.unshift('送迎変更');
+  }
+  
+  if (text.includes('車種') && text.includes('変更')) {
+    foundTerms.unshift('車種変更');
+  }
+  
+  if (text.includes('利用便') && text.includes('変更')) {
+    foundTerms.unshift('利用便変更');
+  }
+  
+  if (text.includes('日付') && text.includes('変更')) {
+    foundTerms.unshift('日付変更');
+  }
+  
+  if (text.includes('時間') && text.includes('変更')) {
+    foundTerms.unshift('時間変更');
+  }
+  
+  // 変更方法に関する検出
+  if (text.includes('変更') && (text.includes('方法') || text.includes('手続き') || text.includes('手順'))) {
+    foundTerms.unshift('変更方法');
+  }
   
   // 日付パターンの検出
   const datePatterns = [
@@ -235,6 +383,11 @@ function boostWithCategories(terms: string[]): string[] {
     boostedTerms.push('予約');
   }
   
+  // 予約変更に関する単語があれば「予約変更」カテゴリを追加
+  if (terms.some(term => /予約.*変更|予約.*修正|予約.*更新|予約.*訂正|送迎変更|車種変更|利用便変更|日付変更/.test(term))) {
+    boostedTerms.push('予約変更');
+  }
+  
   // 料金に関する単語があれば「料金」カテゴリを追加
   if (terms.some(term => /料金|価格|費用|支払い|決済|コスト|値段|代金|金額/.test(term))) {
     boostedTerms.push('料金');
@@ -263,30 +416,39 @@ function boostWithCategories(terms: string[]): string[] {
   return boostedTerms;
 }
 
-// 検索結果の型定義を更新
-type SearchResult = Knowledge & {
-  rank?: number;
-  ts_score?: number;
-  sim_score?: number;
-  tag_score?: number;
-  category_score?: number;
-  final_score?: number;
-  relevance?: number;
-};
-
 // 検索結果のスコアリングを更新
 function calculateSearchScore(
   tsScore: number,
   simScore: number,
   tagScore: number,
-  categoryScore: number
+  categoryScore: number,
+  keyTerms: string[] = []
 ): number {
-  // 新しい重み付けスキーム
+  // 予約変更関連のキーワードを検出
+  const hasReservationChangeTerms = keyTerms.some(term => 
+    /予約.*変更|予約.*修正|変更.*予約|修正.*予約|予約内容.*変更|予約の変更/.test(term) ||
+    term === '予約変更' || term === '予約日程変更' || term === '予約の変更'
+  );
+  
+  // 重み付け係数
+  let tsWeight = 0.4;      // 全文検索スコア（40%）
+  let simWeight = 0.2;     // 類似度スコア（20%）
+  let tagWeight = 0.2;     // タグスコア（20%）
+  let categoryWeight = 0.2; // カテゴリスコア（20%）
+  
+  // 予約変更関連のクエリの場合、カテゴリスコアの重み付けを増加
+  if (hasReservationChangeTerms) {
+    tsWeight = 0.3;        // 全文検索スコア（30%）
+    simWeight = 0.2;       // 類似度スコア（20%）
+    tagWeight = 0.2;       // タグスコア（20%）
+    categoryWeight = 0.3;  // カテゴリスコア（30%）
+  }
+  
   return (
-    (tsScore * 0.4) +      // 全文検索スコア（40%）
-    (simScore * 0.2) +     // 類似度スコア（20%）
-    (tagScore * 0.2) +     // タグスコア（20%）
-    (categoryScore * 0.2)  // カテゴリスコア（20%）
+    (tsScore * tsWeight) +
+    (simScore * simWeight) +
+    (tagScore * tagWeight) +
+    (categoryScore * categoryWeight)
   );
 }
 
@@ -294,37 +456,51 @@ function calculateSearchScore(
  * カテゴリスコアを計算する関数
  * 
  * @param knowledge ナレッジエントリ
- * @param keyTerms 検索キーワード
+ * @param query 検索クエリ
+ * @param tags 検索タグ
  * @returns カテゴリスコア（0.0〜1.0）
  */
-function calculateCategoryScore(knowledge: Knowledge, keyTerms: string[]): number {
+function calculateCategoryScore(
+  knowledge: Knowledge,
+  query: string,
+  tags: string[]
+): number {
   let score = 0;
   
-  // メインカテゴリの一致度
-  if (knowledge.main_category) {
-    const mainCategoryMatch = keyTerms.some(term => 
-      knowledge.main_category?.toLowerCase().includes(term.toLowerCase())
-    );
-    if (mainCategoryMatch) score += 0.4;
+  // カテゴリ一致スコア
+  if (
+    knowledge.main_category &&
+    query.toLowerCase().includes(knowledge.main_category.toLowerCase())
+  ) {
+    score += 0.3;
   }
   
-  // サブカテゴリの一致度
-  if (knowledge.sub_category) {
-    const subCategoryMatch = keyTerms.some(term => 
-      knowledge.sub_category?.toLowerCase().includes(term.toLowerCase())
-    );
-    if (subCategoryMatch) score += 0.3;
+  if (
+    knowledge.sub_category &&
+    query.toLowerCase().includes(knowledge.sub_category.toLowerCase())
+  ) {
+    score += 0.2;
   }
   
-  // 詳細カテゴリの一致度
-  if (knowledge.detail_category) {
-    const detailCategoryMatch = keyTerms.some(term => 
-      knowledge.detail_category?.toLowerCase().includes(term.toLowerCase())
-    );
-    if (detailCategoryMatch) score += 0.3;
+  // 予約変更に関する特別スコアリング
+  if (
+    query.includes('予約') &&
+    query.includes('変更') &&
+    (knowledge.question?.includes('予約') || knowledge.question?.includes('変更'))
+  ) {
+    score += 0.3;
   }
   
-  return Math.min(score, 1.0);
+  // 検索タグが指定されている場合はボーナススコア
+  if (tags.length > 0 && knowledge.main_category) {
+    for (const tag of tags) {
+      if (knowledge.main_category.includes(tag)) {
+        score += 0.2;
+      }
+    }
+  }
+  
+  return Math.min(score, 1);
 }
 
 /**
@@ -355,153 +531,480 @@ async function searchKnowledgeByCategories(
   });
 }
 
+// 重要な利用規約キーワードの定義
+const IMPORTANT_TERMS = {
+  INTERNATIONAL_FLIGHT: {
+    keywords: ['国際線', '国際便', '国際'],
+    weight: 1.5,
+    category: '利用制限'
+  },
+  VEHICLE_RESTRICTIONS: {
+    keywords: ['外車', 'レクサス', '大型高級車', '高級車', 'BMW', 'ベンツ', 'アウディ'],
+    weight: 1.3,
+    category: '利用制限'
+  },
+  LUGGAGE_RESTRICTIONS: {
+    keywords: ['荷物', '手荷物', 'バッグ', 'スーツケース', '定員'],
+    weight: 1.2,
+    category: '利用制限'
+  },
+  PASSENGER_LIMIT: {
+    keywords: ['定員', '人数制限', '乗車人数', '利用人数', '5名'],
+    weight: 1.4,
+    category: '利用制限'
+  }
+};
+
+// 検索クエリの前処理を簡素化
+function enhanceQueryPreprocessing(query: string): string {
+  // 基本的なクエリの正規化
+  const normalizedQuery = query.trim();
+  
+  // 重要なキーワードの追加
+  let enhancedQuery = normalizedQuery;
+  
+  // 重要な利用規約キーワードの検出と重み付け
+  Object.values(IMPORTANT_TERMS).forEach(term => {
+    if (term.keywords.some(keyword => normalizedQuery.includes(keyword))) {
+      // 検出されたキーワードを追加
+      enhancedQuery += ' ' + term.keywords.join(' ');
+    }
+  });
+  
+  console.log('Original Query:', query);
+  console.log('Enhanced Query:', enhancedQuery);
+  
+  return enhancedQuery;
+}
+
 /**
- * 高度な全文検索を実行する関数
+ * 検索クエリを前処理する関数（改善版）
+ */
+function preprocessQuery(query: string): string {
+  // 不要な助詞や記号を削除
+  const normalized = query.replace(/[はがのにへでとやもをのような、。．！？!?.\s]+/g, ' ').trim();
+  
+  // 単語に分割して重要なキーワードを抽出
+  const words = normalized.split(' ').filter(w => w.length > 1);
+  
+  // 「予約」「営業時間」などの重要キーワードを抽出
+  const keywords = [];
+  for (const word of words) {
+    // 外車関連の抽出強化
+    if (word.includes('外車') || word === '外車' || word.includes('外国車') || word.includes('輸入車')) {
+      keywords.push('外車');
+      // 高級車・大型車関連のキーワードも追加
+      keywords.push('高級車');
+      keywords.push('大型車');
+    }
+    
+    // 予約関連
+    if (word.includes('予約')) keywords.push('予約');
+    if (word.includes('変更') && (normalized.includes('予約') || normalized.includes('変更'))) {
+      keywords.push('予約変更');
+      keywords.push('変更');
+    }
+    
+    // その他重要キーワード
+    if (word.includes('営業')) keywords.push('営業');
+    if (word.includes('時間')) keywords.push('時間');
+    if (word.includes('国際')) keywords.push('国際');
+    if (word.includes('キャンセル')) keywords.push('キャンセル');
+    if (word.includes('料金')) keywords.push('料金');
+    if (word.includes('支払')) keywords.push('支払');
+    if (word.includes('修正')) keywords.push('修正');
+    if (word.includes('更新')) keywords.push('更新');
+    if (word.includes('送迎')) keywords.push('送迎');
+    if (word.includes('車種')) keywords.push('車種');
+    if (word.includes('駐車')) keywords.push('駐車');
+  }
+  
+  // 「外車」と「駐車」が両方含まれている場合に特別な複合語を追加
+  if (normalized.includes('外車') && normalized.includes('駐車')) {
+    keywords.push('外車駐車');
+    keywords.push('外車や大型高級車でも駐車場を利用');
+  }
+  
+  // 国際線関連のクエリの場合
+  if (normalized.includes('国際線') || (normalized.includes('国際') && normalized.includes('線'))) {
+    keywords.push('国際線');
+    if (normalized.includes('利用') || normalized.includes('可能')) {
+      keywords.push('国際線の利用');
+      keywords.push('国際線をご利用');
+    }
+  }
+  
+  // 文字列から漢字、ひらがな、カタカナの部分を抽出
+  const japanesePattern = /[一-龠]+|[ぁ-ゔ]+|[ァ-ヴー]+/g;
+  const japaneseMatches = normalized.match(japanesePattern) || [];
+  
+  // クエリと分割したものと抽出したキーワードをすべて含める
+  const allTerms = [
+    normalized, // 元のクエリそのままも含める
+    ...words,
+    ...keywords,
+    ...japaneseMatches
+  ];
+  
+  // ユニークなキーワードを返す（重複を排除）
+  return [...new Set(allTerms)].join(' ');
+}
+
+/**
+ * 知識ベースを検索する関数（改善版）
  * 
  * @param query 検索クエリ
- * @returns 検索結果
+ * @param tags タグ（オプション）
+ * @param category カテゴリ（オプション）
+ * @returns 検索結果の配列
  */
-export async function searchKnowledge(query: string) {
+export async function searchKnowledge(
+  query: string,
+  tags: string[] = [],
+  category: string = ''
+): Promise<SearchResult[]> {
+  console.log(`検索クエリ: "${query}"`);
+  
   try {
-    const { 
-      cleanedQuery, 
-      orQuery, 
-      webSearchQuery, 
-      keyTerms, 
-      andQuery, 
-      plainQuery, 
-      specialTerms,
-      synonymExpanded
-    } = await preprocessJapaneseQuery(query);
+    // データベース内のKnowledgeエントリの総数をログ
+    const knowledgeCount = await prisma.knowledge.count();
+    console.log(`データベース内のKnowledgeエントリ数: ${knowledgeCount}`);
     
-    if (!cleanedQuery) {
-      console.log('空のクエリが指定されました');
-      return null;
+    // 元のクエリを保存
+    const originalQuery = query.trim();
+    
+    // クエリの前処理（標準と拡張の両方を実行）
+    const standardProcessedQuery = preprocessQuery(originalQuery);
+    const enhancedProcessedQuery = enhancedPreprocessQuery(originalQuery);
+    
+    console.log(`標準前処理済みクエリ: "${standardProcessedQuery}"`);
+    console.log(`拡張前処理済みクエリ: "${enhancedProcessedQuery}"`);
+    
+    let results: SearchResult[] = [];
+    
+    // 1. 専用トピック検索（最優先）
+    // 外車駐車関連の専用検索
+    if (originalQuery.includes('外車') || originalQuery.includes('レクサス') || 
+        originalQuery.includes('BMW') || originalQuery.includes('ベンツ') || 
+        originalQuery.includes('高級車')) {
+      console.log('外車駐車関連のクエリを検出しました');
+      const luxuryCarResults = await searchLuxuryCarParking(originalQuery);
+      if (luxuryCarResults && luxuryCarResults.length > 0) {
+        console.log('外車駐車専用検索で結果が見つかりました');
+        return addSearchNotes(luxuryCarResults, originalQuery);
+      }
     }
     
-    // 前処理されたクエリ情報をログに出力
-    console.log('前処理されたクエリ情報:', {
-      cleanedQuery,
-      orQuery,
-      webSearchQuery,
-      keyTerms,
-      andQuery,
-      plainQuery,
-      specialTerms,
-      synonymExpanded
-    });
-    
-    // 検索結果を格納する配列
-    let allResults: SearchResult[] = [];
-    
-    // 方法1: タグベース検索
-    console.log('方法1: タグベース検索');
-    const tagResults = await searchKnowledgeByTags([...keyTerms, ...synonymExpanded]);
-    
-    tagResults.forEach(result => {
-      const categoryScore = calculateCategoryScore(result.knowledge, keyTerms);
-      allResults.push({
-        ...result.knowledge,
-        ts_score: 0,
-        sim_score: 0,
-        tag_score: result.score,
-        category_score: categoryScore,
-        final_score: calculateSearchScore(0, 0, result.score, categoryScore)
-      });
-    });
-    
-    // 方法2: カテゴリベース検索
-    console.log('方法2: カテゴリベース検索');
-    const categoryResults = await searchKnowledgeByCategories(
-      keyTerms.join(' '),
-      synonymExpanded.join(' ')
-    );
-    
-    categoryResults.forEach(result => {
-      const existingIndex = allResults.findIndex(r => r.id === result.id);
-      const categoryScore = calculateCategoryScore(result, keyTerms);
-      
-      if (existingIndex >= 0) {
-        allResults[existingIndex].category_score = Math.max(
-          allResults[existingIndex].category_score || 0,
-          categoryScore
-        );
-      } else {
-        allResults.push({
-          ...result,
-          ts_score: 0,
-          sim_score: 0,
-          tag_score: 0,
-          category_score: categoryScore,
-          final_score: calculateSearchScore(0, 0, 0, categoryScore)
-        });
+    // 予約変更関連の専用検索
+    if (originalQuery.includes('予約') && (originalQuery.includes('変更') || 
+        originalQuery.includes('修正') || originalQuery.includes('更新'))) {
+      console.log('予約変更関連のクエリを検出しました');
+      const reservationChangeResults = await searchReservationChange(originalQuery);
+      if (reservationChangeResults && reservationChangeResults.length > 0) {
+        console.log('予約変更専用検索で結果が見つかりました');
+        return addSearchNotes(reservationChangeResults, originalQuery);
       }
-    });
+    }
     
-    // 方法3: 全文検索
-    console.log('方法3: 全文検索');
-    if (webSearchQuery) {
-      const textSearchResults = await prisma.$queryRaw<(Knowledge & { rank: number })[]>`
+    // 国際線関連の専用検索
+    if (originalQuery.includes('国際線') || (originalQuery.includes('国際') && 
+        (originalQuery.includes('線') || originalQuery.includes('便')))) {
+      console.log('国際線関連のクエリを検出しました');
+      const internationalFlightResults = await searchInternationalFlight(originalQuery);
+      if (internationalFlightResults && internationalFlightResults.length > 0) {
+        console.log('国際線専用検索で結果が見つかりました');
+        return addSearchNotes(internationalFlightResults, originalQuery);
+      }
+    }
+    
+    // 2. タグベースの検索（特定のタグが指定された場合）
+    if (tags.length > 0) {
+      console.log(`タグ検索を実行: [${tags.join(', ')}]`);
+      const tagResults = await searchKnowledgeByTags(tags);
+      
+      if (tagResults.length > 0) {
+        console.log(`タグ検索で ${tagResults.length} 件の結果が見つかりました`);
+        results = tagResults.map(result => ({
+          ...result.knowledge,
+          score: result.score,
+          note: 'タグ検索で見つかりました'
+        })) as SearchResult[];
+        
+        return addSearchNotes(results, originalQuery);
+      }
+    }
+    
+    // 3. PGroonga全文検索（標準の前処理クエリを使用）
+    try {
+      console.log('PGroonga全文検索を実行（標準クエリ使用）');
+      results = await prisma.$queryRaw<SearchResult[]>`
         SELECT 
           k.*,
-          ts_rank(k.search_vector, websearch_to_tsquery('japanese', ${webSearchQuery})) as rank
+          pgroonga_score(k.tableoid, k.ctid) AS pgroonga_score,
+          similarity(COALESCE(k.question, ''), ${originalQuery}) as question_sim,
+          similarity(COALESCE(k.answer, ''), ${originalQuery}) as answer_sim
         FROM "Knowledge" k
-        WHERE k.search_vector @@ websearch_to_tsquery('japanese', ${webSearchQuery})
-        ORDER BY rank DESC
+        WHERE 
+          k.question &@~ ${standardProcessedQuery}
+          OR k.answer &@~ ${standardProcessedQuery}
+          OR k.main_category &@~ ${standardProcessedQuery}
+          OR k.sub_category &@~ ${standardProcessedQuery}
+        ORDER BY
+          question_sim DESC,
+          pgroonga_score DESC,
+          answer_sim DESC
+        LIMIT 10
       `;
       
-      textSearchResults.forEach(result => {
-        const existingIndex = allResults.findIndex(r => r.id === result.id);
-        const categoryScore = calculateCategoryScore(result, keyTerms);
-        const tsScore = parseFloat(result.rank.toFixed(2));
+      console.log(`PGroonga全文検索（標準）で ${results.length} 件の結果が見つかりました`);
+      
+      if (results.length > 0) {
+        results = results.map(result => ({
+          ...result,
+          score: calculateScore(result, originalQuery),
+          note: 'PGroonga全文検索で見つかりました'
+        }));
         
-        if (existingIndex >= 0) {
-          allResults[existingIndex].ts_score = Math.max(
-            allResults[existingIndex].ts_score || 0,
-            tsScore
-          );
-        } else {
-          allResults.push({
-            ...result,
-            ts_score: tsScore,
-            sim_score: 0,
-            tag_score: 0,
-            category_score: categoryScore,
-            final_score: calculateSearchScore(tsScore, 0, 0, categoryScore)
-          });
-        }
-      });
+        return addSearchNotes(results, originalQuery);
+      }
+    } catch (error) {
+      console.error('PGroonga全文検索（標準）でエラーが発生しました:', error);
     }
     
-    // 最終スコアの計算と結果のソート
-    allResults = allResults.map(result => ({
+    // 4. 拡張クエリでのPGroonga全文検索
+    try {
+      console.log('PGroonga全文検索を実行（拡張クエリ使用）');
+      results = await prisma.$queryRaw<SearchResult[]>`
+        SELECT 
+          k.*,
+          pgroonga_score(k.tableoid, k.ctid) AS pgroonga_score,
+          similarity(COALESCE(k.question, ''), ${originalQuery}) as question_sim,
+          similarity(COALESCE(k.answer, ''), ${originalQuery}) as answer_sim
+        FROM "Knowledge" k
+        WHERE 
+          k.question &@~ ${enhancedProcessedQuery}
+          OR k.answer &@~ ${enhancedProcessedQuery}
+          OR k.main_category &@~ ${enhancedProcessedQuery}
+          OR k.sub_category &@~ ${enhancedProcessedQuery}
+        ORDER BY
+          question_sim DESC,
+          pgroonga_score DESC,
+          answer_sim DESC
+        LIMIT 10
+      `;
+      
+      console.log(`PGroonga全文検索（拡張）で ${results.length} 件の結果が見つかりました`);
+      
+      if (results.length > 0) {
+        results = results.map(result => ({
+          ...result,
+          score: calculateScore(result, originalQuery),
+          note: 'PGroonga拡張検索で見つかりました'
+        }));
+        
+        return addSearchNotes(results, originalQuery);
+      }
+    } catch (error) {
+      console.error('PGroonga全文検索（拡張）でエラーが発生しました:', error);
+    }
+    
+    // 5. 単語毎マッチング検索（標準クエリで&@演算子を使用）
+    try {
+      console.log('単語マッチング検索を実行（標準クエリ使用）');
+      results = await prisma.$queryRaw<SearchResult[]>`
+        SELECT 
+          k.*,
+          pgroonga_score(k.tableoid, k.ctid) AS pgroonga_score,
+          similarity(COALESCE(k.question, ''), ${originalQuery}) as question_sim,
+          similarity(COALESCE(k.answer, ''), ${originalQuery}) as answer_sim
+        FROM "Knowledge" k
+        WHERE 
+          k.question &@ ${standardProcessedQuery}
+          OR k.answer &@ ${standardProcessedQuery}
+          OR k.main_category &@ ${standardProcessedQuery}
+          OR k.sub_category &@ ${standardProcessedQuery}
+        ORDER BY
+          question_sim DESC,
+          pgroonga_score DESC,
+          answer_sim DESC
+        LIMIT 10
+      `;
+      
+      console.log(`単語マッチング検索（標準）で ${results.length} 件の結果が見つかりました`);
+      
+      if (results.length > 0) {
+        results = results.map(result => ({
+          ...result,
+          score: calculateScore(result, originalQuery) * 0.9, // スコアを少し下げる
+          note: '単語マッチング検索で見つかりました'
+        }));
+        
+        return addSearchNotes(results, originalQuery);
+      }
+    } catch (error) {
+      console.error('単語マッチング検索（標準）でエラーが発生しました:', error);
+    }
+    
+    // 6. 拡張クエリでの単語マッチング検索
+    try {
+      console.log('単語マッチング検索を実行（拡張クエリ使用）');
+      results = await prisma.$queryRaw<SearchResult[]>`
+        SELECT 
+          k.*,
+          pgroonga_score(k.tableoid, k.ctid) AS pgroonga_score,
+          similarity(COALESCE(k.question, ''), ${originalQuery}) as question_sim,
+          similarity(COALESCE(k.answer, ''), ${originalQuery}) as answer_sim
+        FROM "Knowledge" k
+        WHERE 
+          k.question &@ ${enhancedProcessedQuery}
+          OR k.answer &@ ${enhancedProcessedQuery}
+          OR k.main_category &@ ${enhancedProcessedQuery}
+          OR k.sub_category &@ ${enhancedProcessedQuery}
+        ORDER BY
+          question_sim DESC,
+          pgroonga_score DESC,
+          answer_sim DESC
+        LIMIT 10
+      `;
+      
+      console.log(`単語マッチング検索（拡張）で ${results.length} 件の結果が見つかりました`);
+      
+      if (results.length > 0) {
+        results = results.map(result => ({
+          ...result,
+          score: calculateScore(result, originalQuery) * 0.85, // スコアをさらに下げる
+          note: '拡張単語マッチング検索で見つかりました'
+        }));
+        
+        return addSearchNotes(results, originalQuery);
+      }
+    } catch (error) {
+      console.error('単語マッチング検索（拡張）でエラーが発生しました:', error);
+    }
+    
+    // 7. ILIKE検索（部分一致）
+    try {
+      console.log('ILIKE検索を実行（部分一致）');
+      
+      // 単語に分割して検索
+      const keywords = standardProcessedQuery.split(/\s+/).filter(k => k.length > 1);
+      const orConditions: Prisma.KnowledgeWhereInput[] = [];
+      
+      for (const keyword of keywords) {
+        if (keyword.length >= 2) {
+          orConditions.push(
+            { question: { contains: keyword, mode: 'insensitive' } },
+            { answer: { contains: keyword, mode: 'insensitive' } },
+            { main_category: { contains: keyword, mode: 'insensitive' } },
+            { sub_category: { contains: keyword, mode: 'insensitive' } }
+          );
+        }
+      }
+      
+      // キーワードがない場合は元のクエリを使用
+      if (orConditions.length === 0) {
+        orConditions.push(
+          { question: { contains: originalQuery, mode: 'insensitive' } },
+          { answer: { contains: originalQuery, mode: 'insensitive' } }
+        );
+      }
+      
+      const prismaResults = await prisma.knowledge.findMany({
+        where: {
+          OR: orConditions
+        },
+        orderBy: {
+          updatedAt: 'desc'
+        },
+        take: 10
+      });
+      
+      console.log(`ILIKE検索で ${prismaResults.length} 件の結果が見つかりました`);
+      
+      if (prismaResults.length > 0) {
+        // 各結果に類似度スコアを追加
+        const resultsWithScore = await Promise.all(
+          prismaResults.map(async (result) => {
+            const questionSim = result.question 
+              ? similarity(result.question, originalQuery) 
+              : 0;
+            const answerSim = result.answer 
+              ? similarity(result.answer, originalQuery) 
+              : 0;
+            
+            return {
+              ...result,
+              question_sim: questionSim,
+              answer_sim: answerSim,
+              score: (questionSim * 0.7) + (answerSim * 0.3),
+              note: 'ILIKE検索で見つかりました'
+            } as SearchResult;
+          })
+        );
+        
+        // スコアで並べ替え
+        results = resultsWithScore.sort((a, b) => (b.score || 0) - (a.score || 0));
+        return addSearchNotes(results, originalQuery);
+      }
+    } catch (error) {
+      console.error('ILIKE検索でエラーが発生しました:', error);
+    }
+    
+    // 8. 最新エントリのフォールバック（最終手段）
+    console.log('関連する結果が見つからなかったため、最新のエントリを表示します');
+    const latestResults = await prisma.knowledge.findMany({
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: 5
+    });
+    
+    results = latestResults.map(result => ({
       ...result,
-      final_score: calculateSearchScore(
-        result.ts_score || 0,
-        result.sim_score || 0,
-        result.tag_score || 0,
-        result.category_score || 0
-      )
-    }));
+      score: 0.1, // 低いスコアを設定
+      note: '関連する結果が見つからなかったため、最新のエントリを表示しています'
+    })) as SearchResult[];
     
-    allResults.sort((a, b) => (b.final_score || 0) - (a.final_score || 0));
+    return addSearchNotes(results, originalQuery);
     
-    // 日付検出と繁忙期チェック
-    const dates = extractDatesFromText(query);
-    const busyPeriodResults = dates.length > 0 ? await checkBusyPeriods(dates) : [];
-    const hasBusyPeriod = busyPeriodResults.some(result => result.busyPeriod !== null);
-    
-    return {
-      results: allResults.slice(0, 10),
-      allResults,
-      keyTerms,
-      synonymExpanded,
-      dates,
-      busyPeriods: busyPeriodResults,
-      hasBusyPeriod
-    };
   } catch (error) {
-    console.error('検索エラー:', error);
-    throw error;
+    console.error('検索処理全体でエラーが発生しました:', error);
+    return [];
   }
+}
+
+/**
+ * 文字列の類似度を計算する関数
+ */
+function similarity(text1: string, text2: string): number {
+  if (!text1 || !text2) return 0;
+  
+  // 両方の文字列を小文字に変換
+  const s1 = text1.toLowerCase();
+  const s2 = text2.toLowerCase();
+  
+  // 完全一致の場合は最大スコア
+  if (s1 === s2) return 1.0;
+  
+  // 一方が他方を含む場合は高いスコア
+  if (s1.includes(s2)) return 0.9;
+  if (s2.includes(s1)) return 0.9;
+  
+  // 単語レベルでの部分一致
+  const words1 = s1.split(/\s+/).filter(Boolean);
+  const words2 = s2.split(/\s+/).filter(Boolean);
+  
+  if (words1.length === 0 || words2.length === 0) return 0;
+  
+  // 単語の一致数をカウント
+  let matchCount = 0;
+  for (const word1 of words1) {
+    if (words2.some(word2 => word2.includes(word1) || word1.includes(word2))) {
+      matchCount++;
+    }
+  }
+  
+  // 類似度スコアを計算
+  const maxLength = Math.max(words1.length, words2.length);
+  return matchCount / maxLength;
 }
