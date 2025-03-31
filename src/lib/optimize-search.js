@@ -251,11 +251,11 @@ async function optimizedSearch(query) {
         k.detail_category,
         k.question,
         k.answer,
-        ts_rank(k.search_vector, to_tsquery('japanese', ${tsQuery})) AS score,
+        ts_rank_cd(k.search_vector::tsvector, to_tsquery('japanese', ${tsQuery})) AS score,
         'ts_query' AS search_method
       FROM "Knowledge" k
       WHERE 
-        k.search_vector @@ to_tsquery('japanese', ${tsQuery})
+        k.search_vector::tsvector @@ to_tsquery('japanese', ${tsQuery})
       ORDER BY
         score DESC
       LIMIT 10
@@ -264,7 +264,14 @@ async function optimizedSearch(query) {
     console.log(`全文検索で ${results.length} 件のナレッジが見つかりました`);
     
     if (results.length > 0) {
-      return processSearchResults(results, originalQuery);
+      // スコアが0より大きい結果のみをフィルタリング
+      const filteredResults = results.filter(r => r.score > 0);
+      if (filteredResults.length > 0) {
+        console.log(`スコアが0より大きい結果: ${filteredResults.length} 件`);
+        return processSearchResults(filteredResults, originalQuery);
+      } else {
+        console.log('ts_rank_cd スコアが全て0以下でした。部分一致検索へフォールバックします。');
+      }
     }
   } catch (error) {
     console.error('全文検索でエラーが発生しました:', error);
@@ -376,6 +383,29 @@ async function optimizedSearch(query) {
  */
 async function searchLuxuryCars(query) {
   try {
+    // 外車利用に関するキーワードリスト
+    const keywords = ['外車', '高級車', '大型車', 'レクサス', 'BMW', 'ベンツ', 'アウディ'];
+    // Prisma.joinを使用してSQLフラグメントを結合
+    const keywordConditions = Prisma.join(
+      keywords.map(kw => Prisma.sql`k.question ILIKE ${'%' + kw + '%'}`),
+      ' OR '
+    );
+    
+    // 関連性の高いカテゴリ
+    const relevantCategories = ['利用制限', '車両関連', '保険対象'];
+    const categoryCondition = Prisma.sql`k.main_category IN (${Prisma.join(relevantCategories)}) OR k.sub_category IN (${Prisma.join(relevantCategories)})`;
+    
+    // 受入不可に関連するキーワード
+    const restrictionKeywords = ['不可', '制限', '対象外', 'お預かりできかねます'];
+    // Prisma.joinを使用してSQLフラグメントを結合
+    const restrictionCondition = Prisma.join(
+      restrictionKeywords.map(kw => Prisma.sql`k.answer ILIKE ${'%' + kw + '%'}`),
+      ' OR '
+    );
+    
+    // 共通の「外車」関連条件をパラメータ化
+    const gaishaTextCondition = Prisma.sql`(k.question ILIKE ${'%外車%'} OR k.answer ILIKE ${'%外車%'})`;
+
     const results = await prisma.$queryRaw`
       SELECT 
         k.id,
@@ -384,16 +414,26 @@ async function searchLuxuryCars(query) {
         k.detail_category,
         k.question,
         k.answer,
-        1.0 AS score,
+        CASE
+          WHEN (${categoryCondition}) AND (${restrictionCondition}) THEN 1.5 -- カテゴリと制限キーワードが一致
+          WHEN (${categoryCondition}) THEN 1.2 -- カテゴリが一致
+          WHEN (${restrictionCondition}) THEN 1.1 -- 制限キーワードが一致
+          ELSE 1.0 -- 通常のキーワード一致
+        END AS score,
         'luxury_car_search' AS search_method
       FROM "Knowledge" k
       WHERE 
-        (k.question ILIKE '%外車%' OR k.answer ILIKE '%外車%')
-        OR (k.question ILIKE '%高級車%' OR k.answer ILIKE '%高級車%')
-        OR (k.question ILIKE '%大型車%' OR k.answer ILIKE '%大型車%')
-        OR (k.main_category ILIKE '%車種%' OR k.sub_category ILIKE '%車種%')
+        (${keywordConditions}) -- 質問にキーワードが含まれる
+        OR (
+          (${categoryCondition}) -- または、関連カテゴリに属する
+          AND ${gaishaTextCondition} -- かつ、外車に関する内容
+        )
+        OR (
+          (${restrictionCondition}) -- または、回答に制限キーワードが含まれる
+          AND ${gaishaTextCondition} -- かつ、外車に関する内容
+        )
       ORDER BY
-        k.id DESC
+        score DESC, k.id DESC
       LIMIT 5
     `;
     

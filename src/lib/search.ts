@@ -615,7 +615,6 @@ function preprocessQuery(query: string): string {
     if (word.includes('修正')) keywords.push('修正');
     if (word.includes('更新')) keywords.push('更新');
     if (word.includes('送迎')) keywords.push('送迎');
-    if (word.includes('車種')) keywords.push('車種');
     if (word.includes('駐車')) keywords.push('駐車');
   }
   
@@ -663,8 +662,10 @@ export async function searchKnowledge(
   tags: string[] = [],
   category: string = ''
 ): Promise<SearchResult[]> {
+  // ★★★ 関数の入り口にログを追加 ★★★
+  console.log(`--- searchKnowledge called with query: "${query}", tags: [${tags.join(', ')}], category: "${category}" ---`);
   console.log(`検索クエリ: "${query}"`);
-  
+
   try {
     // データベース内のKnowledgeエントリの総数をログ
     const knowledgeCount = await prisma.knowledge.count();
@@ -682,39 +683,110 @@ export async function searchKnowledge(
     
     let results: SearchResult[] = [];
     
+    // ★★★ if 文の直前にログを追加 ★★★
+    console.log(`--- Checking for Luxury Car search trigger for query: "${originalQuery}" ---`);
     // 1. 専用トピック検索（最優先）
     // 外車駐車関連の専用検索
-    if (originalQuery.includes('外車') || originalQuery.includes('レクサス') || 
-        originalQuery.includes('BMW') || originalQuery.includes('ベンツ') || 
+    if (originalQuery.includes('外車') || originalQuery.includes('レクサス') ||
+        originalQuery.includes('BMW') || originalQuery.includes('ベンツ') ||
         originalQuery.includes('高級車')) {
       console.log('外車駐車関連のクエリを検出しました');
-      const luxuryCarResults = await searchLuxuryCarParking(originalQuery);
-      if (luxuryCarResults && luxuryCarResults.length > 0) {
-        console.log('外車駐車専用検索で結果が見つかりました');
-        return addSearchNotes(luxuryCarResults, originalQuery);
+
+      // ★★★ シンプルな findFirst クエリを再挿入 ★★★
+      console.log('>>> 外車検索: 超シンプルなクエリを実行する直前');
+      try {
+        const simpleResult = await prisma.knowledge.findFirst({
+          where: {
+            OR: [
+              { question: { contains: '外車' } },
+              { answer: { contains: '外車' } }
+            ]
+          },
+          take: 1
+        });
+        console.log('>>> 外車検索: シンプルクエリ成功', simpleResult ? 'データあり' : 'データなし');
+        console.log('>>> 外車検索: 実際に取得されたデータ:', JSON.stringify(simpleResult));
+
+        if (simpleResult) {
+          const searchResult: SearchResult = {
+            id: simpleResult.id,
+            question: simpleResult.question || '',
+            answer: simpleResult.answer || '',
+            main_category: simpleResult.main_category || null,
+            sub_category: simpleResult.sub_category || null,
+            detail_category: simpleResult.detail_category || null,
+            is_template: simpleResult.is_template,
+            usage: simpleResult.usage,
+            issue: simpleResult.issue,
+            createdAt: simpleResult.createdAt,
+            updatedAt: simpleResult.updatedAt,
+            score: 1.0,
+            note: '外車検索でシンプルクエリで見つかりました',
+            pgroonga_score: 1.0,
+            question_sim: 1.0,
+            answer_sim: 1.0
+          };
+          results = [searchResult];
+          console.log('>>> 外車検索: 明示的に変換した結果を返します', JSON.stringify(results));
+          return addSearchNotes(results, originalQuery);
+        }
+      } catch (simpleError) {
+        console.error('>>> 外車検索: シンプルクエリでエラー', simpleError);
       }
+      console.log('>>> 外車検索: シンプルクエリの後の処理（結果が見つからなかった場合）');
+      // ★★★ ここまで再挿入 ★★★
     }
-    
-    // 予約変更関連の専用検索
-    if (originalQuery.includes('予約') && (originalQuery.includes('変更') || 
-        originalQuery.includes('修正') || originalQuery.includes('更新'))) {
-      console.log('予約変更関連のクエリを検出しました');
-      const reservationChangeResults = await searchReservationChange(originalQuery);
-      if (reservationChangeResults && reservationChangeResults.length > 0) {
-        console.log('予約変更専用検索で結果が見つかりました');
-        return addSearchNotes(reservationChangeResults, originalQuery);
-      }
-    }
-    
+
+    // ★★★ if 文の直前にログを追加 ★★★
+    console.log(`--- Checking for International Flight search trigger for query: "${originalQuery}" ---`);
     // 国際線関連の専用検索
-    if (originalQuery.includes('国際線') || (originalQuery.includes('国際') && 
+    if (originalQuery.includes('国際線') || (originalQuery.includes('国際') &&
         (originalQuery.includes('線') || originalQuery.includes('便')))) {
       console.log('国際線関連のクエリを検出しました');
-      const internationalFlightResults = await searchInternationalFlight(originalQuery);
-      if (internationalFlightResults && internationalFlightResults.length > 0) {
-        console.log('国際線専用検索で結果が見つかりました');
-        return addSearchNotes(internationalFlightResults, originalQuery);
+
+      // ★★★ シンプルな findFirst クエリを再挿入 ★★★
+      console.log('>>> 国際線検索: 超シンプルなクエリを実行する直前');
+      try {
+        const simpleResult = await prisma.knowledge.findFirst({
+          where: {
+            OR: [
+              { question: { contains: '国際線' } },
+              { answer: { contains: '国際線' } }
+            ]
+          },
+          take: 1
+        });
+        console.log('>>> 国際線検索: シンプルクエリ成功', simpleResult ? 'データあり' : 'データなし');
+        console.log('>>> 国際線検索: 実際に取得されたデータ:', JSON.stringify(simpleResult));
+
+        if (simpleResult) {
+          const searchResult: SearchResult = {
+            id: simpleResult.id,
+            question: simpleResult.question || '',
+            answer: simpleResult.answer || '',
+            main_category: simpleResult.main_category || null,
+            sub_category: simpleResult.sub_category || null,
+            detail_category: simpleResult.detail_category || null,
+            is_template: simpleResult.is_template,
+            usage: simpleResult.usage,
+            issue: simpleResult.issue,
+            createdAt: simpleResult.createdAt,
+            updatedAt: simpleResult.updatedAt,
+            score: 1.0,
+            note: '国際線検索でシンプルクエリで見つかりました',
+            pgroonga_score: 1.0,
+            question_sim: 1.0,
+            answer_sim: 1.0
+          };
+          results = [searchResult];
+          console.log('>>> 国際線検索: 明示的に変換した結果を返します', JSON.stringify(results));
+          return addSearchNotes(results, originalQuery);
+        }
+      } catch (simpleError) {
+        console.error('>>> 国際線検索: シンプルクエリでエラー', simpleError);
       }
+      console.log('>>> 国際線検索: シンプルクエリの後の処理（結果が見つからなかった場合）');
+      // ★★★ ここまで再挿入 ★★★
     }
     
     // 2. タグベースの検索（特定のタグが指定された場合）
@@ -734,12 +806,24 @@ export async function searchKnowledge(
       }
     }
     
+    // ★★★ 手順3の try...catch ブロックを削除 & 再挿入 ★★★
     // 3. PGroonga全文検索（標準の前処理クエリを使用）
     try {
       console.log('PGroonga全文検索を実行（標準クエリ使用）');
       results = await prisma.$queryRaw<SearchResult[]>`
         SELECT 
-          k.*,
+          k.id,
+          k.main_category,
+          k.sub_category,
+          k.detail_category,
+          k.question,
+          k.answer,
+          k.is_template,
+          k.usage,
+          k.note,
+          k.issue,
+          k."createdAt",
+          k."updatedAt",
           pgroonga_score(k.tableoid, k.ctid) AS pgroonga_score,
           similarity(COALESCE(k.question, ''), ${originalQuery}) as question_sim,
           similarity(COALESCE(k.answer, ''), ${originalQuery}) as answer_sim
@@ -749,9 +833,10 @@ export async function searchKnowledge(
           OR k.answer &@~ ${standardProcessedQuery}
           OR k.main_category &@~ ${standardProcessedQuery}
           OR k.sub_category &@~ ${standardProcessedQuery}
+          OR k.detail_category &@~ ${standardProcessedQuery}
         ORDER BY
-          question_sim DESC,
           pgroonga_score DESC,
+          question_sim DESC,
           answer_sim DESC
         LIMIT 10
       `;
@@ -770,13 +855,27 @@ export async function searchKnowledge(
     } catch (error) {
       console.error('PGroonga全文検索（標準）でエラーが発生しました:', error);
     }
-    
+    // ★★★ 再挿入ここまで ★★★
+
+    // ★★★ 以下の try...catch ブロック全体をコメントアウト ★★★
+    /*
     // 4. 拡張クエリでのPGroonga全文検索
     try {
       console.log('PGroonga全文検索を実行（拡張クエリ使用）');
       results = await prisma.$queryRaw<SearchResult[]>`
         SELECT 
-          k.*,
+          k.id,
+          k.main_category,
+          k.sub_category,
+          k.detail_category,
+          k.question,
+          k.answer,
+          k.is_template,
+          k.usage,
+          k.note,
+          k.issue,
+          k."createdAt",
+          k."updatedAt",
           pgroonga_score(k.tableoid, k.ctid) AS pgroonga_score,
           similarity(COALESCE(k.question, ''), ${originalQuery}) as question_sim,
           similarity(COALESCE(k.answer, ''), ${originalQuery}) as answer_sim
@@ -784,11 +883,12 @@ export async function searchKnowledge(
         WHERE 
           k.question &@~ ${enhancedProcessedQuery}
           OR k.answer &@~ ${enhancedProcessedQuery}
-          OR k.main_category &@~ ${enhancedProcessedQuery}
-          OR k.sub_category &@~ ${enhancedProcessedQuery}
+          OR k.main_category &@~ ${standardProcessedQuery}
+          OR k.sub_category &@~ ${standardProcessedQuery}
+          OR k.detail_category &@~ ${standardProcessedQuery}
         ORDER BY
-          question_sim DESC,
           pgroonga_score DESC,
+          question_sim DESC,
           answer_sim DESC
         LIMIT 10
       `;
@@ -807,13 +907,28 @@ export async function searchKnowledge(
     } catch (error) {
       console.error('PGroonga全文検索（拡張）でエラーが発生しました:', error);
     }
+    */
+    // ★★★ コメントアウトここまで ★★★
     
-    // 5. 単語毎マッチング検索（標準クエリで&@演算子を使用）
+    // ★★★ 以下の try...catch ブロック全体をコメントアウト ★★★
+    /*
+    // 5. 単語マッチング検索（標準の前処理クエリを使用）
     try {
       console.log('単語マッチング検索を実行（標準クエリ使用）');
       results = await prisma.$queryRaw<SearchResult[]>`
         SELECT 
-          k.*,
+          k.id,
+          k.main_category,
+          k.sub_category,
+          k.detail_category,
+          k.question,
+          k.answer,
+          k.is_template,
+          k.usage,
+          k.note,
+          k.issue,
+          k."createdAt",    // ★★★ 引用符で囲む ★★★
+          k."updatedAt",    // ★★★ 引用符で囲む ★★★
           pgroonga_score(k.tableoid, k.ctid) AS pgroonga_score,
           similarity(COALESCE(k.question, ''), ${originalQuery}) as question_sim,
           similarity(COALESCE(k.answer, ''), ${originalQuery}) as answer_sim
@@ -823,9 +938,10 @@ export async function searchKnowledge(
           OR k.answer &@ ${standardProcessedQuery}
           OR k.main_category &@ ${standardProcessedQuery}
           OR k.sub_category &@ ${standardProcessedQuery}
+          OR k.detail_category &@ ${standardProcessedQuery}
         ORDER BY
-          question_sim DESC,
           pgroonga_score DESC,
+          question_sim DESC,
           answer_sim DESC
         LIMIT 10
       `;
@@ -835,7 +951,7 @@ export async function searchKnowledge(
       if (results.length > 0) {
         results = results.map(result => ({
           ...result,
-          score: calculateScore(result, originalQuery) * 0.9, // スコアを少し下げる
+          score: calculateScore(result, originalQuery) * 0.9,
           note: '単語マッチング検索で見つかりました'
         }));
         
@@ -844,13 +960,28 @@ export async function searchKnowledge(
     } catch (error) {
       console.error('単語マッチング検索（標準）でエラーが発生しました:', error);
     }
+    */
+    // ★★★ コメントアウトここまで ★★★
     
+    // ★★★ 以下のコメントブロックのコメントアウトを解除 ★★★
+    /* // この行を削除
     // 6. 拡張クエリでの単語マッチング検索
     try {
       console.log('単語マッチング検索を実行（拡張クエリ使用）');
       results = await prisma.$queryRaw<SearchResult[]>`
         SELECT 
-          k.*,
+          k.id,
+          k.main_category,
+          k.sub_category,
+          k.detail_category,
+          k.question,
+          k.answer,
+          k.is_template,
+          k.usage,
+          k.note,
+          k.issue,
+          k."createdAt", // ★★★ 引用符で囲む ★★★
+          k."updatedAt", // ★★★ 引用符で囲む ★★★
           pgroonga_score(k.tableoid, k.ctid) AS pgroonga_score,
           similarity(COALESCE(k.question, ''), ${originalQuery}) as question_sim,
           similarity(COALESCE(k.answer, ''), ${originalQuery}) as answer_sim
@@ -858,11 +989,12 @@ export async function searchKnowledge(
         WHERE 
           k.question &@ ${enhancedProcessedQuery}
           OR k.answer &@ ${enhancedProcessedQuery}
-          OR k.main_category &@ ${enhancedProcessedQuery}
-          OR k.sub_category &@ ${enhancedProcessedQuery}
+          OR k.main_category &@ ${standardProcessedQuery}
+          OR k.sub_category &@ ${standardProcessedQuery}
+          OR k.detail_category &@ ${standardProcessedQuery}
         ORDER BY
-          question_sim DESC,
           pgroonga_score DESC,
+          question_sim DESC,
           answer_sim DESC
         LIMIT 10
       `;
@@ -872,7 +1004,7 @@ export async function searchKnowledge(
       if (results.length > 0) {
         results = results.map(result => ({
           ...result,
-          score: calculateScore(result, originalQuery) * 0.85, // スコアをさらに下げる
+          score: calculateScore(result, originalQuery) * 0.85,
           note: '拡張単語マッチング検索で見つかりました'
         }));
         
@@ -881,6 +1013,8 @@ export async function searchKnowledge(
     } catch (error) {
       console.error('単語マッチング検索（拡張）でエラーが発生しました:', error);
     }
+    */ // この行を削除
+    // ★★★ コメントアウト解除ここまで ★★★
     
     // 7. ILIKE検索（部分一致）
     try {
@@ -896,7 +1030,8 @@ export async function searchKnowledge(
             { question: { contains: keyword, mode: 'insensitive' } },
             { answer: { contains: keyword, mode: 'insensitive' } },
             { main_category: { contains: keyword, mode: 'insensitive' } },
-            { sub_category: { contains: keyword, mode: 'insensitive' } }
+            { sub_category: { contains: keyword, mode: 'insensitive' } },
+            { detail_category: { contains: keyword, mode: 'insensitive' } }
           );
         }
       }
@@ -961,7 +1096,7 @@ export async function searchKnowledge(
     
     results = latestResults.map(result => ({
       ...result,
-      score: 0.1, // 低いスコアを設定
+      score: 0.1,
       note: '関連する結果が見つからなかったため、最新のエントリを表示しています'
     })) as SearchResult[];
     

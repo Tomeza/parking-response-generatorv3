@@ -4,7 +4,7 @@ import { refineResponse } from '@/lib/anthropic';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { original_response, tone } = body;
+    const { original_response, tone, knowledge_ids } = body;
 
     if (!original_response) {
       return NextResponse.json(
@@ -15,14 +15,19 @@ export async function POST(request: NextRequest) {
 
     const refinedResponse = await refineResponse(
       original_response,
-      tone || 'formal'
+      tone || 'formal',
+      knowledge_ids
     );
 
-    return NextResponse.json({ refined_response: refinedResponse });
+    return NextResponse.json({ 
+      refined_response: refinedResponse,
+      original_response: original_response,
+      success: true
+    });
   } catch (error) {
     console.error('API error:', error);
     return NextResponse.json(
-      { error: 'サーバーエラーが発生しました' },
+      { error: 'サーバーエラーが発生しました', success: false },
       { status: 500 }
     );
   }

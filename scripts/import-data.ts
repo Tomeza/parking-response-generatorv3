@@ -24,7 +24,7 @@ async function importKnowledgeData() {
     console.log('データインポート開始...');
     
     // CSVファイルを読み込む
-    const csvPath = path.join(__dirname, 'src', 'data', 'csv', 'production', 'knowledge_complaint.csv');
+    const csvPath = path.join(__dirname, 'src', 'data', 'csv', 'production', 'knowledge_complaint_template.csv');
     const csvData = fs.readFileSync(csvPath, 'utf8');
     
     // CSVをパース

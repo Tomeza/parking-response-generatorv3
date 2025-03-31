@@ -1,4 +1,12 @@
-import { searchKnowledge } from './src/lib/search.js';
+import { searchKnowledge } from '../src/lib/search';
+
+interface SearchResult {
+  results?: Array<any>;
+  keyTerms?: string[];
+  synonymExpanded?: string[];
+  dates?: Date[];
+  busyPeriods?: any[];
+}
 
 async function testSearch() {
   try {
@@ -15,12 +23,12 @@ async function testSearch() {
       console.log(`クエリ: "${query}" の検索結果`);
       console.log('===================================');
       
-      const result = await searchKnowledge(query);
+      const result = await searchKnowledge(query) as SearchResult;
       console.log('検索結果数:', result?.results?.length);
       console.log('検索結果:', JSON.stringify(result?.results?.slice(0, 2), null, 2));
       console.log('キーワード:', result?.keyTerms);
       console.log('同義語展開:', result?.synonymExpanded);
-      console.log('日付検出:', result?.dates?.map(d => d.toISOString() || ''));
+      console.log('日付検出:', result?.dates?.map((d: Date) => d.toISOString() || ''));
       console.log('繁忙期:', result?.busyPeriods || []);
     }
   } catch (e) {

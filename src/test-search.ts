@@ -1,4 +1,4 @@
-import { searchKnowledge } from './lib/search.js';
+const { searchKnowledge } = require('./lib/search');
 
 async function testSearch() {
   try {
@@ -51,22 +51,18 @@ async function testSearch() {
       console.log(`クエリ: "${query}" の検索結果`);
       console.log('===================================');
       
-      const result = await searchKnowledge(query);
+      const results = await searchKnowledge(query);
       
-      if (!result) {
+      if (!results || results.length === 0) {
         console.log('検索結果なし');
         continue;
       }
       
-      console.log('検索結果数:', result.results.length);
-      console.log('検索結果:', JSON.stringify(result.results.slice(0, 2), null, 2));
-      console.log('キーワード:', result.keyTerms);
-      console.log('同義語展開:', result.synonymExpanded);
-      console.log('日付検出:', result.dates?.map(d => d.toISOString() || ''));
-      console.log('繁忙期:', result.busyPeriods || []);
+      console.log('検索結果数:', results.length);
+      console.log('検索結果のサンプル:', JSON.stringify(results.slice(0, 2), null, 2));
       
       // 検索結果が0件または1件の場合、不足している可能性がある
-      if (result.results.length <= 1) {
+      if (results.length <= 1) {
         console.log('⚠️ 注意: このクエリに対する検索結果が少ないため、ナレッジの追加を検討してください');
       }
     }

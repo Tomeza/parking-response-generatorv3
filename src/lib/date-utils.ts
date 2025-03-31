@@ -1,7 +1,7 @@
 /**
  * 日付検出と繁忙期チェックのためのユーティリティ関数
  */
-import { prisma } from './db.js';
+import { prisma } from './db';
 import { SeasonalInfo } from '@prisma/client';
 
 /**
@@ -12,101 +12,43 @@ import { SeasonalInfo } from '@prisma/client';
  */
 export function extractDatesFromText(text: string): Date[] {
   const dates: Date[] = [];
-  const currentYear = new Date().getFullYear();
   
-  // パターン1: YYYY年MM月DD日 または YYYY/MM/DD または YYYY-MM-DD
-  const fullDatePattern = /(\d{4})[-年/](\d{1,2})[-月/](\d{1,2})日?/g;
-  let match;
-  while ((match = fullDatePattern.exec(text)) !== null) {
-    const year = parseInt(match[1], 10);
-    const month = parseInt(match[2], 10) - 1; // JavaScriptの月は0-11
-    const day = parseInt(match[3], 10);
-    
-    const date = new Date(year, month, day);
-    if (!isNaN(date.getTime())) {
-      dates.push(date);
-    }
-  }
+  // 日付パターンの定義
+  const patterns = [
+    // 2024年3月15日
+    /(\d{4})年(\d{1,2})月(\d{1,2})日/g,
+    // 3月15日
+    /(\d{1,2})月(\d{1,2})日/g,
+    // 2024/3/15
+    /(\d{4})\/(\d{1,2})\/(\d{1,2})/g,
+    // 3/15
+    /(\d{1,2})\/(\d{1,2})/g,
+    // 2024-3-15
+    /(\d{4})-(\d{1,2})-(\d{1,2})/g,
+    // 3-15
+    /(\d{1,2})-(\d{1,2})/g
+  ];
   
-  // パターン2: MM月DD日（年なし、現在の年と次の年を考慮）
-  const monthDayPattern = /(\d{1,2})月(\d{1,2})日/g;
-  while ((match = monthDayPattern.exec(text)) !== null) {
-    const month = parseInt(match[1], 10) - 1;
-    const day = parseInt(match[2], 10);
-    
-    // 現在の年で日付を作成
-    const dateCurrentYear = new Date(currentYear, month, day);
-    if (!isNaN(dateCurrentYear.getTime())) {
-      dates.push(dateCurrentYear);
+  patterns.forEach(pattern => {
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+      let year = new Date().getFullYear();
+      let month = parseInt(match[1]);
+      let day = parseInt(match[2]);
       
-      // 現在の日付より過去の場合は、来年の可能性も考慮
-      const now = new Date();
-      if (dateCurrentYear < now) {
-        const dateNextYear = new Date(currentYear + 1, month, day);
-        dates.push(dateNextYear);
+      // パターンによって引数の位置が異なる
+      if (match.length === 4) {
+        year = parseInt(match[1]);
+        month = parseInt(match[2]);
+        day = parseInt(match[3]);
+      }
+      
+      const date = new Date(year, month - 1, day);
+      if (!isNaN(date.getTime())) {
+        dates.push(date);
       }
     }
-  }
-  
-  // パターン3: MM/DD（年なし、現在の年と次の年を考慮）
-  const slashPattern = /(\d{1,2})\/(\d{1,2})(?!\d)/g;
-  while ((match = slashPattern.exec(text)) !== null) {
-    const month = parseInt(match[1], 10) - 1;
-    const day = parseInt(match[2], 10);
-    
-    // 現在の年で日付を作成
-    const dateCurrentYear = new Date(currentYear, month, day);
-    if (!isNaN(dateCurrentYear.getTime())) {
-      dates.push(dateCurrentYear);
-      
-      // 現在の日付より過去の場合は、来年の可能性も考慮
-      const now = new Date();
-      if (dateCurrentYear < now) {
-        const dateNextYear = new Date(currentYear + 1, month, day);
-        dates.push(dateNextYear);
-      }
-    }
-  }
-  
-  // パターン4: 「来週」「来月」「今週末」などの相対的な表現
-  if (text.includes('来週')) {
-    const now = new Date();
-    const nextWeek = new Date(now);
-    nextWeek.setDate(now.getDate() + 7);
-    dates.push(nextWeek);
-  }
-  
-  if (text.includes('来月')) {
-    const now = new Date();
-    const nextMonth = new Date(now);
-    nextMonth.setMonth(now.getMonth() + 1);
-    dates.push(nextMonth);
-  }
-  
-  if (text.includes('今週末') || text.includes('今週の土曜') || text.includes('今週の日曜')) {
-    const now = new Date();
-    const dayOfWeek = now.getDay(); // 0: 日曜, 1: 月曜, ..., 6: 土曜
-    
-    // 土曜日までの日数を計算
-    const daysUntilSaturday = dayOfWeek === 6 ? 0 : 6 - dayOfWeek;
-    const saturday = new Date(now);
-    saturday.setDate(now.getDate() + daysUntilSaturday);
-    dates.push(saturday);
-    
-    // 日曜日までの日数を計算
-    const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
-    const sunday = new Date(now);
-    sunday.setDate(now.getDate() + daysUntilSunday);
-    dates.push(sunday);
-  }
-  
-  if (text.includes('連休') || text.includes('休日')) {
-    // 次の祝日や連休を考慮（簡易版）
-    const now = new Date();
-    const nextMonth = new Date(now);
-    nextMonth.setMonth(now.getMonth() + 1);
-    dates.push(nextMonth);
-  }
+  });
   
   return dates;
 }
