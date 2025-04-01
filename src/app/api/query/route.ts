@@ -132,39 +132,24 @@ export async function GET(request: NextRequest) {
     let templateReason = "標準テンプレート適用";
     let finalResponseText = bestMatch.answer; // ★★★ デフォルトは bestMatch の回答 ★★★
 
-    // ★★★ 修正: search_method がないので、専用の回答生成ロジックは一旦コメントアウト ★★★
-    /* 
-    // 検索メソッドに基づいて最終回答とテンプレート理由を決定
-    switch (bestMatch.search_method) {
-      case 'luxury_car_search':
-        // ★★★ 外車検索の場合は、直接的な回答文を生成 ★★★
-        finalResponseText = "お問い合わせありがとうございます。誠に申し訳ございませんが、当駐車場では場内保険の対象外となるため、外車（レクサス、BMW、ベンツ、アウディなどを含む）はお預かりできかねます。ご理解いただけますと幸いです。";
-        template = finalResponseText; // この場合テンプレートは使用しない (回答文自体がテンプレート)
-        templateReason = "外車利用不可のため専用回答を生成";
-        break;
-      case 'reservation_change_search':
-        // 予約変更の場合、bestMatchの回答を使い、テンプレートを適用
-        finalResponseText = bestMatch.answer;
-        template = "[ANSWER] 予約変更に関する詳細はウェブサイトをご確認いただくか、お問い合わせください。";
-        templateReason = "予約変更の専用検索結果に基づきテンプレート適用";
-        finalResponseText = template.replace("[ANSWER]", finalResponseText); // テンプレート適用
-        break;
-      case 'international_flight_search':
-        // 国際線の場合、bestMatchの回答を使い、テンプレートを適用
-        finalResponseText = bestMatch.answer; 
-        template = "申し訳ございませんが、[ANSWER] 当駐車場は国内線ご利用のお客様専用となっております。";
-        templateReason = "国際線利用不可の専用検索結果に基づきテンプレート適用";
-        finalResponseText = template.replace("[ANSWER]", finalResponseText); // テンプレート適用
-        break;
-      // デフォルト（pgroonga_main, ts_query など）は bestMatch の回答をそのまま使う
-      default:
-         finalResponseText = bestMatch.answer;
-         template = "[ANSWER]";
-         templateReason = "標準テンプレート適用";
-         // template.replace は不要 (テンプレートが[ANSWER]のみなので)
-         break;
+    // ★★★ 修正: bestMatch.note に基づいて専用回答を生成 ★★★
+    if (bestMatch.note === '外車利用に関する専用回答です') {
+      finalResponseText = "お問い合わせありがとうございます。誠に申し訳ございませんが、当駐車場では場内保険の対象外となるため、全外車（BMW、ベンツ、アウディなどを含む）とレクサス全車種はお預かりできかねます。ご理解いただけますと幸いです。";
+      template = finalResponseText; // テンプレート適用なし
+      templateReason = "外車利用不可の専用回答を適用";
+    } else if (bestMatch.note === '国際線利用に関する専用回答です') { // ★★★ ID判定を削除し、noteのみで判定 ★★★
+      // finalResponseText = `申し訳ございませんが、${bestMatch.answer} 当駐車場は国内線ご利用のお客様専用となっております。`;
+      // ★★★ 修正: 固定テキストに変更し、重複を解消 + 補足を追加 ★★★
+      finalResponseText = "申し訳ございませんが、当駐車場は国内線ご利用のお客様専用となっております。国際線ターミナルへの送迎も含め、ご利用いただけません。";
+      template = finalResponseText; // テンプレート適用なし
+      templateReason = "国際線利用不可の専用回答を適用"; // ★★★ (ID:4)を削除 ★★★
+    } else if (!template.includes("[ANSWER]")) {
+        // templateが[ANSWER]を含まない場合（例えば専用回答が直接設定された場合）は、replaceをスキップ
+    } else if (finalResponseText) {
+      // 通常のナレッジが見つかった場合、テンプレートを適用
+      finalResponseText = template.replace("[ANSWER]", finalResponseText);
     }
-    */
+    // ★★★ 修正ここまで ★★★
 
     const templateStep = {
       step: "テンプレート適用",

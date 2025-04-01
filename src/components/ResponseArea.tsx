@@ -1,109 +1,69 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ClipboardIcon, CheckIcon, SparklesIcon } from '@heroicons/react/24/outline';
+// Remove unused icons
+// import { ClipboardIcon, CheckIcon, SparklesIcon } from '@heroicons/react/24/outline';
 
-export function ResponseArea({ text = '' }: { text?: string }) {
-  const [copied, setCopied] = useState(false);
-  const [isRefining, setIsRefining] = useState(false);
-  const [refinedText, setRefinedText] = useState('');
+// Define props interface
+interface ResponseAreaProps {
+  title?: string;
+  text?: string;
+  loading?: boolean;
+}
 
-  // テキストが変更されたら、洗練されたテキストをリセット
+export function ResponseArea({ title = '', text = '', loading = false }: ResponseAreaProps) {
+  // Remove unused states
+  // const [copied, setCopied] = useState(false);
+  // const [isRefining, setIsRefining] = useState(false);
+  // const [refinedText, setRefinedText] = useState('');
+
+  // Remove unused useEffect
+  // useEffect(() => {
+  //   setRefinedText('');
+  // }, [text]);
+
+  // Debug log for received props
   useEffect(() => {
-    setRefinedText('');
-  }, [text]);
+    console.log('ResponseArea received props:', { title, text, loading });
+  }, [title, text, loading]);
 
-  // デバッグ用のログ
-  useEffect(() => {
-    console.log('ResponseArea received text:', text);
-  }, [text]);
+  // Remove handleCopy function
+  // const handleCopy = async () => { ... };
 
-  const handleCopy = async () => {
-    const textToCopy = refinedText || text;
-    if (!textToCopy) return;
-    
-    try {
-      await navigator.clipboard.writeText(textToCopy);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy text: ', err);
-    }
-  };
+  // Remove handleRefine function
+  // const handleRefine = async () => { ... };
 
-  const handleRefine = async () => {
-    if (!text || isRefining) return;
-    
-    setIsRefining(true);
-    try {
-      const res = await fetch('/api/refine', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          original_response: text,
-          tone: 'formal'
-        }),
-      });
-      
-      const data = await res.json();
-      
-      if (data.refined_response) {
-        setRefinedText(data.refined_response);
-      } else if (data.error) {
-        console.error('Refinement error:', data.error);
-      }
-    } catch (err) {
-      console.error('Failed to refine text:', err);
-    } finally {
-      setIsRefining(false);
-    }
-  };
-
-  const displayText = refinedText || text;
+  // Use text prop directly
+  const displayText = text;
 
   return (
-    <div className="relative">
-      <div className="bg-[#2d3748] rounded p-4 min-h-[200px] border border-[#394861]">
-        {displayText ? (
-          <p className="text-white whitespace-pre-wrap">{displayText}</p>
-        ) : (
-          <p className="text-gray-400">返信はここに表示されます</p>
-        )}
-      </div>
-      
-      {text && (
-        <div className="absolute top-2 right-2 flex space-x-2">
-          <button
-            onClick={handleRefine}
-            disabled={isRefining || !!refinedText}
-            className={`p-2 bg-gray-600 text-white rounded hover:bg-gray-500 ${
-              isRefining ? 'opacity-50 cursor-wait' : refinedText ? 'bg-green-700' : ''
-            }`}
-            aria-label="AIで清書"
-            title="AIで文章を洗練させる"
-          >
-            <SparklesIcon className="w-5 h-5" />
-          </button>
-          <button
-            onClick={handleCopy}
-            className="p-2 bg-gray-600 text-white rounded hover:bg-gray-500"
-            aria-label="コピー"
-            title="クリップボードにコピー"
-          >
-            {copied ? <CheckIcon className="w-5 h-5 text-green-400" /> : <ClipboardIcon className="w-5 h-5" />}
-          </button>
-        </div>
-      )}
-      
-      {isRefining && (
-        <div className="absolute inset-0 bg-[#2d3748] bg-opacity-70 flex items-center justify-center">
-          <div className="text-white">
-            AIが回答を清書しています...
+    <div className="relative h-full flex flex-col"> {/* Ensure component takes full height */}
+      {title && <h3 className="text-lg font-medium text-white mb-2">{title}</h3>} {/* Display title if provided */}
+      <div className={`relative bg-[#2d3748] rounded p-4 flex-grow border border-[#394861] ${loading ? 'min-h-[200px]' : ''}`}> {/* Adjust height based on loading */}
+        {/* Display loading overlay */}
+        {loading && (
+          <div className="absolute inset-0 bg-[#2d3748] bg-opacity-80 flex items-center justify-center z-10 rounded">
+            <div className="text-white text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+              処理中...
+            </div>
           </div>
+        )}
+        {/* Display text or placeholder */}
+        <div className={`transition-opacity duration-300 ${loading ? 'opacity-30' : 'opacity-100'}`}>
+          {displayText ? (
+            <p className="text-white whitespace-pre-wrap">{displayText}</p>
+          ) : (
+            <p className="text-gray-400">返信はここに表示されます</p>
+          )}
         </div>
-      )}
+      </div>
+
+      {/* Remove button container */}
+      {/* {text && ( ... )} */}
+
+      {/* Remove refining overlay (now handled by loading prop) */}
+      {/* {isRefining && ( ... )} */}
     </div>
   );
 } 

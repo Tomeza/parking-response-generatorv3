@@ -692,49 +692,81 @@ export async function searchKnowledge(
         originalQuery.includes('高級車')) {
       console.log('外車駐車関連のクエリを検出しました');
 
-      // ★★★ シンプルな findFirst クエリを再挿入 ★★★
-      console.log('>>> 外車検索: 超シンプルなクエリを実行する直前');
+      // ★★★ 修正: 内容ベースで専用ナレッジを優先検索し、なければ findMany ★★★
       try {
-        const simpleResult = await prisma.knowledge.findFirst({
+        // 1. 内容ベースで専用ナレッジを検索
+        console.log('>>> 外車検索: 内容ベースで専用ナレッジを検索します');
+        const specificQuestion = "外車（BMW、ベンツ、アウディなど）で利用したいのですが？";
+        const specificAnswer = "外車は場内保険の対象外となるため、お預かりできかねます。";
+
+        const dedicatedKnowledge = await prisma.knowledge.findFirst({
+          where: {
+            OR: [
+              { question: specificQuestion },
+              { answer: specificAnswer },
+            ],
+          },
+        });
+
+        if (dedicatedKnowledge) {
+          console.log('>>> 外車検索: 内容ベースで専用ナレッジが見つかりました。これを返します。');
+          const searchResult: SearchResult = {
+            ...dedicatedKnowledge, // Knowledgeの全フィールドを展開
+            score: 1.0, // 専用回答なので最高スコア
+            note: '外車利用に関する専用回答です', // ★★★ APIルートで判定するためのnote
+            pgroonga_score: 1.0, // 必要に応じて設定
+            question_sim: 1.0,  // 必要に応じて設定
+            answer_sim: 1.0     // 必要に応じて設定
+          };
+          results = [searchResult];
+          return addSearchNotes(results, originalQuery);
+        }
+
+        // 2. 専用ナレッジが見つからない場合、通常の findMany 検索
+        console.log('>>> 外車検索: 専用ナレッジが見つからなかったため、findManyで関連ナレッジを検索します');
+        const relatedKnowledge = await prisma.knowledge.findMany({
           where: {
             OR: [
               { question: { contains: '外車' } },
-              { answer: { contains: '外車' } }
-            ]
+              { answer: { contains: '外車' } },
+              { question: { contains: '高級車' } },
+              { answer: { contains: '高級車' } },
+              { main_category: '車種' },
+              { main_category: '利用制限' },
+              { sub_category: '外車' },
+            ],
+            // 専用ナレッジが見つからなかった場合、それを除外する（任意）
+            // NOT: {
+            //   OR: [
+            //     { question: specificQuestion },
+            //     { answer: specificAnswer },
+            //   ]
+            // }
           },
-          take: 1
+          orderBy: {
+            updatedAt: 'desc',
+          },
+          take: 3, // 上位3件を取得
         });
-        console.log('>>> 外車検索: シンプルクエリ成功', simpleResult ? 'データあり' : 'データなし');
-        console.log('>>> 外車検索: 実際に取得されたデータ:', JSON.stringify(simpleResult));
 
-        if (simpleResult) {
-          const searchResult: SearchResult = {
-            id: simpleResult.id,
-            question: simpleResult.question || '',
-            answer: simpleResult.answer || '',
-            main_category: simpleResult.main_category || null,
-            sub_category: simpleResult.sub_category || null,
-            detail_category: simpleResult.detail_category || null,
-            is_template: simpleResult.is_template,
-            usage: simpleResult.usage,
-            issue: simpleResult.issue,
-            createdAt: simpleResult.createdAt,
-            updatedAt: simpleResult.updatedAt,
-            score: 1.0,
-            note: '外車検索でシンプルクエリで見つかりました',
-            pgroonga_score: 1.0,
-            question_sim: 1.0,
-            answer_sim: 1.0
-          };
-          results = [searchResult];
-          console.log('>>> 外車検索: 明示的に変換した結果を返します', JSON.stringify(results));
+        console.log(`>>> 外車検索: findMany で ${relatedKnowledge.length} 件見つかりました`);
+
+        if (relatedKnowledge.length > 0) {
+          results = relatedKnowledge.map((knowledge) => ({
+            ...knowledge, // Knowledgeの全フィールドを展開
+            score: 0.8, // 通常検索なので少しスコアを下げる
+            note: '外車関連のナレッジ'
+            // pgroonga_score など他のスコアはここでは計算しない (必要なら追加)
+          }));
+          console.log('>>> 外車検索: findManyの結果を返します', JSON.stringify(results));
           return addSearchNotes(results, originalQuery);
         }
-      } catch (simpleError) {
-        console.error('>>> 外車検索: シンプルクエリでエラー', simpleError);
+
+      } catch (error) {
+        console.error('>>> 外車検索: 専用検索またはfindManyでエラー', error);
       }
-      console.log('>>> 外車検索: シンプルクエリの後の処理（結果が見つからなかった場合）');
-      // ★★★ ここまで再挿入 ★★★
+      console.log('>>> 外車検索: 関連ナレッジが見つかりませんでした');
+      // ★★★ 修正ここまで ★★★
     }
 
     // ★★★ if 文の直前にログを追加 ★★★
@@ -744,49 +776,78 @@ export async function searchKnowledge(
         (originalQuery.includes('線') || originalQuery.includes('便')))) {
       console.log('国際線関連のクエリを検出しました');
 
-      // ★★★ シンプルな findFirst クエリを再挿入 ★★★
-      console.log('>>> 国際線検索: 超シンプルなクエリを実行する直前');
+      // ★★★ 修正: 内容ベースで専用ナレッジを優先検索し、なければ findMany ★★★
       try {
-        const simpleResult = await prisma.knowledge.findFirst({
+        // 1. 内容ベースで専用ナレッジを検索
+        console.log('>>> 国際線検索: 内容ベースで専用ナレッジを検索します');
+        const specificQuestion = "国際線の利用は可能ですか？";
+        const specificAnswer = "当駐車場は国内線ご利用のお客様専用となっております。";
+
+        const dedicatedKnowledge = await prisma.knowledge.findFirst({
+          where: {
+            OR: [
+              { question: specificQuestion },
+              { answer: specificAnswer }
+            ]
+          }
+        });
+
+        if (dedicatedKnowledge) {
+          console.log('>>> 国際線検索: 内容ベースで専用ナレッジが見つかりました。これを返します。');
+          const searchResult: SearchResult = {
+            ...dedicatedKnowledge, // Knowledgeの全フィールドを展開
+            score: 1.0, // 専用回答なので最高スコア
+            note: '国際線利用に関する専用回答です', // ★★★ APIルートで判定するためのnote
+            pgroonga_score: 1.0, // 必要に応じて設定
+            question_sim: 1.0,  // 必要に応じて設定
+            answer_sim: 1.0     // 必要に応じて設定
+          };
+          results = [searchResult];
+          return addSearchNotes(results, originalQuery);
+        }
+
+        // 2. 専用ナレッジが見つからない場合、通常の findMany 検索
+        console.log('>>> 国際線検索: 専用ナレッジが見つからなかったため、findManyで関連ナレッジを検索します');
+        const relatedKnowledge = await prisma.knowledge.findMany({
           where: {
             OR: [
               { question: { contains: '国際線' } },
-              { answer: { contains: '国際線' } }
-            ]
+              { answer: { contains: '国際線' } },
+              { main_category: 'フライト情報' },
+              { main_category: '利用制限' },
+            ],
+            // 専用ナレッジが見つからなかった場合、それを除外する（任意）
+            // NOT: {
+            //   OR: [
+            //     { question: specificQuestion },
+            //     { answer: specificAnswer }
+            //   ]
+            // }
           },
-          take: 1
+          orderBy: {
+            updatedAt: 'desc',
+          },
+          take: 3, // 上位3件を取得
         });
-        console.log('>>> 国際線検索: シンプルクエリ成功', simpleResult ? 'データあり' : 'データなし');
-        console.log('>>> 国際線検索: 実際に取得されたデータ:', JSON.stringify(simpleResult));
 
-        if (simpleResult) {
-          const searchResult: SearchResult = {
-            id: simpleResult.id,
-            question: simpleResult.question || '',
-            answer: simpleResult.answer || '',
-            main_category: simpleResult.main_category || null,
-            sub_category: simpleResult.sub_category || null,
-            detail_category: simpleResult.detail_category || null,
-            is_template: simpleResult.is_template,
-            usage: simpleResult.usage,
-            issue: simpleResult.issue,
-            createdAt: simpleResult.createdAt,
-            updatedAt: simpleResult.updatedAt,
-            score: 1.0,
-            note: '国際線検索でシンプルクエリで見つかりました',
-            pgroonga_score: 1.0,
-            question_sim: 1.0,
-            answer_sim: 1.0
-          };
-          results = [searchResult];
-          console.log('>>> 国際線検索: 明示的に変換した結果を返します', JSON.stringify(results));
+        console.log(`>>> 国際線検索: findMany で ${relatedKnowledge.length} 件見つかりました`);
+
+        if (relatedKnowledge.length > 0) {
+          results = relatedKnowledge.map((knowledge) => ({
+            ...knowledge, // Knowledgeの全フィールドを展開
+            score: 0.8, // 通常検索なので少しスコアを下げる
+            note: '国際線関連のナレッジ'
+            // pgroonga_score など他のスコアはここでは計算しない (必要なら追加)
+          }));
+          console.log('>>> 国際線検索: findManyの結果を返します', JSON.stringify(results));
           return addSearchNotes(results, originalQuery);
         }
-      } catch (simpleError) {
-        console.error('>>> 国際線検索: シンプルクエリでエラー', simpleError);
+
+      } catch (error) {
+        console.error('>>> 国際線検索: 専用検索またはfindManyでエラー', error);
       }
-      console.log('>>> 国際線検索: シンプルクエリの後の処理（結果が見つからなかった場合）');
-      // ★★★ ここまで再挿入 ★★★
+      console.log('>>> 国際線検索: 関連ナレッジが見つかりませんでした');
+      // ★★★ 修正ここまで ★★★
     }
     
     // 2. タグベースの検索（特定のタグが指定された場合）

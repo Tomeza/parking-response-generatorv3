@@ -29,7 +29,6 @@ function formatDateToJapanese(date: Date): string {
 export default function Home() {
   const [inputText, setInputText] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isRefining, setIsRefining] = useState(false);
   const [generatedResponse, setGeneratedResponse] = useState('');
   const [refinedResponse, setRefinedResponse] = useState('');
   const [generationSteps, setGenerationSteps] = useState<any[] | null>(null);
@@ -37,6 +36,8 @@ export default function Home() {
   const [feedback, setFeedback] = useState<boolean | null>(null);
   const [isSendingFeedback, setIsSendingFeedback] = useState(false);
   const [responseLogs, setResponseLogs] = useState<ResponseLog[]>([]);
+  const [isManualRefining, setIsManualRefining] = useState(false);
+  const [error, setError] = useState('');
 
   // 履歴データを取得する関数
   const fetchResponseLogs = async () => {
@@ -68,9 +69,12 @@ export default function Home() {
     if (!inputText.trim()) return;
     
     setIsGenerating(true);
-    setIsRefining(true);
-    setFeedback(null); // リセット
-    setRefinedResponse(''); // リセット
+    setGeneratedResponse('');
+    setRefinedResponse('');
+    setGenerationSteps(null);
+    setResponseId(null);
+    setFeedback(null);
+    setError('');
     
     try {
       console.log('Generating response for:', inputText);
@@ -83,58 +87,9 @@ export default function Home() {
       setGenerationSteps(data.steps || []);
       setResponseId(data.responseId || null);
       
-      // 元の回答を得たらAI清書を実行
-      if (data.response) {
-        try {
-          // 使用された知識ベースIDを取得 - usedKnowledgeIdsか、stepsから抽出
-          let usedKnowledgeIds = [];
-          
-          // APIからusedKnowledgeIdsが直接返されている場合はそれを使用
-          if (data.usedKnowledgeIds && Array.isArray(data.usedKnowledgeIds)) {
-            usedKnowledgeIds = data.usedKnowledgeIds;
-          } 
-          // そうでない場合は、stepsからナレッジ情報を抽出
-          else if (data.steps && data.steps.length > 1) {
-            const knowledgeStep = data.steps.find((step: any) => step.step === "ナレッジ検索");
-            if (knowledgeStep && knowledgeStep.content && knowledgeStep.content.used) {
-              usedKnowledgeIds = knowledgeStep.content.used.map((item: any) => item.id);
-            }
-          }
-          
-          console.log('Using knowledge IDs for refinement:', usedKnowledgeIds);
-          
-          const refineRes = await fetch('/api/refine', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              original_response: data.response,
-              tone: 'formal',
-              knowledge_ids: usedKnowledgeIds
-            }),
-          });
-          
-          const refineData = await refineRes.json();
-          console.log('Refined response:', refineData);
-          
-          if (refineRes.ok && refineData.refined_response) {
-            setRefinedResponse(refineData.refined_response);
-          } else {
-            console.error('Refinement failed:', refineData.error || `Status: ${refineRes.status}`);
-            setRefinedResponse('AIによる清書に失敗しました。外部APIのエラーが発生した可能性があります。');
-          }
-        } catch (refineError) {
-          console.error('Error refining response:', refineError);
-          setRefinedResponse('AIによる清書中にエラーが発生しました。');
-        } finally {
-          setIsRefining(false);
-        }
-      } else {
-        setIsRefining(false);
-      }
     } catch (error) {
       console.error('Error generating response:', error);
+      setError('回答の生成中にエラーが発生しました。');
     } finally {
       setIsGenerating(false);
     }
@@ -179,6 +134,48 @@ export default function Home() {
     // }, 100);
   };
 
+  const handleManualRefine = async () => {
+    if (!generatedResponse || isManualRefining || isGenerating) return;
+
+    setIsManualRefining(true);
+    setRefinedResponse(''); // Clear previous refined response
+    setError(''); // Clear previous errors
+
+    try {
+      const refineRes = await fetch('/api/refine', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ original_response: generatedResponse, tone: 'formal' }),
+      });
+
+      if (!refineRes.ok) {
+        const errorData = await refineRes.json().catch(() => ({ error: 'サーバーエラーが発生しました。' }));
+        console.error('Refinement API error:', refineRes.status, errorData);
+        setError(`AI清書処理中にエラーが発生しました。(HTTP ${refineRes.status}) ${errorData.error || ''}`);
+        setRefinedResponse('');
+        return;
+      }
+
+      const data = await refineRes.json();
+
+      if (data.refined_response) {
+        setRefinedResponse(data.refined_response);
+      } else {
+        console.error('Refinement API response missing data:', data);
+        setError('AI清書処理は成功しましたが、予期せぬ形式の応答を受け取りました。');
+        setRefinedResponse('');
+      }
+    } catch (err) {
+      console.error('Failed to fetch refinement:', err);
+      setError('AI清書処理の呼び出し中にネットワークエラーが発生しました。');
+      setRefinedResponse('');
+    } finally {
+      setIsManualRefining(false);
+    }
+  };
+
   return (
     <main className="min-h-screen p-4">
       <div className="flex justify-between items-center mb-6">
@@ -220,7 +217,7 @@ export default function Home() {
               </div>
               <button 
                 onClick={handleGenerate}
-                disabled={isGenerating || !inputText.trim()} 
+                disabled={isGenerating || isManualRefining || !inputText.trim()}
                 className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
               >
                 {isGenerating ? '生成中...' : '生成'}
@@ -241,49 +238,22 @@ export default function Home() {
 
         {/* 中央カラム: テンプレート方式の回答 */}
         <div className="lg:col-span-4">
-          <div className="bg-gray-800 rounded-lg p-4 h-full">
+          <div className="bg-gray-800 rounded-lg p-4 h-full flex flex-col">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-white">テンプレート方式</h2>
-              
-              {generatedResponse && responseId && (
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => sendFeedback(true)}
-                    disabled={isSendingFeedback || feedback !== null}
-                    className={`p-2 rounded ${
-                      feedback === true 
-                        ? 'bg-green-700 text-white' 
-                        : 'bg-gray-600 hover:bg-gray-500 text-white'
-                    } disabled:opacity-50`}
-                    title="良い回答"
-                  >
-                    <HandThumbUpIcon className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => sendFeedback(false)}
-                    disabled={isSendingFeedback || feedback !== null}
-                    className={`p-2 rounded ${
-                      feedback === false 
-                        ? 'bg-red-700 text-white' 
-                        : 'bg-gray-600 hover:bg-gray-500 text-white'
-                    } disabled:opacity-50`}
-                    title="改善が必要"
-                  >
-                    <HandThumbDownIcon className="w-5 h-5" />
-                  </button>
-                </div>
-              )}
             </div>
-            <ResponseArea text={generatedResponse} />
-            
-            {feedback !== null && (
-              <div className={`mt-4 p-2 rounded text-center text-sm ${
-                feedback ? 'bg-green-800 text-green-200' : 'bg-red-800 text-red-200'
-              }`}>
-                {feedback 
-                  ? 'フィードバックありがとうございます。この回答は良い評価として記録されました。' 
-                  : 'フィードバックありがとうございます。この回答は改善点として記録されました。'
-                }
+            <div className="flex-grow">
+              <ResponseArea title="" text={generatedResponse} loading={isGenerating} />
+            </div>
+            {generatedResponse && (
+              <div className="mt-4 text-right flex-shrink-0">
+                <button 
+                  onClick={handleManualRefine}
+                  disabled={isManualRefining || isGenerating} 
+                  className="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700 disabled:opacity-50"
+                >
+                  {isManualRefining ? 'AI清書中...' : 'AI清書を実行'}
+                </button>
               </div>
             )}
           </div>
@@ -291,13 +261,25 @@ export default function Home() {
 
         {/* 右カラム: AI清書方式の回答 */}
         <div className="lg:col-span-5">
-          <div className="bg-gray-800 rounded-lg p-4 h-full">
+          <div className="bg-gray-800 rounded-lg p-4 h-full flex flex-col">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-white">AI清書方式</h2>
-              {isRefining && <div className="text-blue-400 text-sm">清書中...</div>}
             </div>
-            <ResponseArea text={refinedResponse} />
-            <div className="mt-4 text-sm text-gray-400">
+            <div className="flex-grow">
+              <ResponseArea 
+                title="【整えた回答】" 
+                text={refinedResponse.startsWith('【整えた回答】') 
+                        ? refinedResponse.substring('【整えた回答】'.length).trim() 
+                        : refinedResponse}
+                loading={isManualRefining} 
+              />
+            </div>
+            {error && (
+              <div className="mt-4 p-3 bg-red-900 border border-red-700 rounded flex-shrink-0">
+                <p className="text-sm text-red-100">{error}</p>
+              </div>
+            )}
+            <div className="mt-4 text-sm text-gray-400 flex-shrink-0">
               AI清書方式は、テンプレートベースの回答をより自然な文章に整形して、情報の整理と読みやすさを向上させます。
             </div>
           </div>
