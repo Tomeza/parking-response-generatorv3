@@ -2,10 +2,24 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { SearchResult } from '@/lib/common-types';
+
+interface SearchResponse {
+  response: string;
+  responseId: number;
+  score: number;
+  knowledge_id: number;
+  question: string;
+  steps: Array<{
+    step: string;
+    content: any;
+  }>;
+  total_results: number;
+}
 
 export default function SearchPage() {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<any[]>([]);
+  const [searchResponse, setSearchResponse] = useState<SearchResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -17,14 +31,14 @@ export default function SearchPage() {
     setError(null);
 
     try {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+      const response = await fetch(`/api/query?q=${encodeURIComponent(query)}`);
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to search');
       }
 
-      setResults(data.results || []);
+      setSearchResponse(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       console.error('Search error:', err);
@@ -61,37 +75,53 @@ export default function SearchPage() {
         )}
       </div>
 
-      <div>
-        <h2 className="text-xl font-semibold mb-2">検索結果 ({results?.length || 0}件)</h2>
-        
-        {results?.length > 0 ? (
-          <div className="space-y-4">
-            {results.map((result) => (
-              <div key={result.id} className="border p-4 rounded">
-                <div className="font-medium">ID: {result.id}</div>
-                <div className="text-sm text-gray-500">
-                  カテゴリ: {result.main_category} &gt; {result.sub_category} &gt; {result.detail_category}
-                </div>
-                <div className="mt-2">
-                  <div className="font-semibold">質問:</div>
-                  <div>{result.question}</div>
-                </div>
-                <div className="mt-2">
-                  <div className="font-semibold">回答:</div>
-                  <div>{result.answer}</div>
-                </div>
-                <div className="mt-2 text-sm text-gray-500">
-                  関連性スコア: {result.relevance}
-                </div>
+      {searchResponse && (
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-xl font-semibold mb-4">検索結果</h2>
+            <div className="prose max-w-none">
+              <div className="bg-gray-50 p-4 rounded mb-4">
+                <div className="font-medium text-gray-700">応答:</div>
+                <div className="mt-2 whitespace-pre-wrap">{searchResponse.response}</div>
               </div>
-            ))}
+              
+              <div className="text-sm text-gray-600">
+                <div>検索スコア: {searchResponse.score.toFixed(3)}</div>
+                <div>関連結果数: {searchResponse.total_results}件</div>
+              </div>
+            </div>
           </div>
-        ) : (
-          <div className="text-gray-500">
-            {loading ? '検索中...' : '検索結果がありません'}
+
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-lg font-semibold mb-4">処理ステップ</h3>
+            <div className="space-y-4">
+              {searchResponse.steps.map((step, index) => (
+                <div key={index} className="border-b pb-4">
+                  <div className="font-medium text-gray-700 mb-2">{step.step}</div>
+                  <div className="text-sm text-gray-600">
+                    <pre className="whitespace-pre-wrap bg-gray-50 p-2 rounded">
+                      {JSON.stringify(step.content, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {!searchResponse && !loading && (
+        <div className="text-gray-500 text-center mt-8">
+          検索キーワードを入力してください
+        </div>
+      )}
+
+      {loading && (
+        <div className="text-center mt-8">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-300 border-t-blue-500"></div>
+          <div className="mt-2 text-gray-600">検索中...</div>
+        </div>
+      )}
     </div>
   );
 } 

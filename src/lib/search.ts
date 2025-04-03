@@ -361,7 +361,6 @@ async function expandSynonyms(terms: string[]): Promise<string[]> {
     // タグ名を追加
     tags.forEach(tag => {
       expanded.push(tag.tag_name);
-      // 同義語も追加
       tag.tag_synonyms.forEach(syn => {
         expanded.push(syn.synonym);
       });
@@ -615,7 +614,6 @@ function preprocessQuery(query: string): string {
     if (word.includes('修正')) keywords.push('修正');
     if (word.includes('更新')) keywords.push('更新');
     if (word.includes('送迎')) keywords.push('送迎');
-    if (word.includes('駐車')) keywords.push('駐車');
   }
   
   // 「外車」と「駐車」が両方含まれている場合に特別な複合語を追加
@@ -684,6 +682,78 @@ export async function searchKnowledge(
     let results: SearchResult[] = [];
     
     // ★★★ if 文の直前にログを追加 ★★★
+    console.log(`--- Checking for Reservation Change search trigger for query: "${originalQuery}" ---`);
+    // 予約変更関連の専用検索（新規追加）
+    if (originalQuery.includes('予約変更') || 
+        (originalQuery.includes('予約') && 
+          (originalQuery.includes('変更') || originalQuery.includes('修正') || 
+           originalQuery.includes('キャンセル')))) {
+      console.log('予約変更関連のクエリを検出しました');
+
+      try {
+        // 予約変更関連のナレッジを直接検索
+        console.log('>>> 予約変更検索: 予約変更関連のナレッジを検索します');
+        
+        const reservationChangeKnowledge = await prisma.knowledge.findMany({
+          where: {
+            AND: [
+              {
+                OR: [
+                  { question: { contains: '予約' } },
+                  { answer: { contains: '予約' } },
+                  { detail_category: { contains: '予約' } },
+                  { main_category: { contains: '予約' } },
+                  { sub_category: { contains: '予約' } }
+                ]
+              },
+              {
+                OR: [
+                  { question: { contains: '変更' } },
+                  { answer: { contains: '変更' } },
+                  { detail_category: { contains: '変更' } },
+                  { main_category: { contains: '変更' } },
+                  { sub_category: { contains: '変更' } }
+                ]
+              }
+            ]
+          },
+          orderBy: {
+            updatedAt: 'desc'
+          },
+          take: 10
+        });
+
+        console.log(`>>> 予約変更検索: Prisma findMany で ${reservationChangeKnowledge.length} 件見つかりました`);
+
+        if (reservationChangeKnowledge.length > 0) {
+          results = reservationChangeKnowledge.map(knowledge => ({
+            ...knowledge,
+            score: calculateSearchScore(
+              0.9, // 基本スコア
+              similarity(knowledge.question || '', originalQuery),
+              similarity(knowledge.answer || '', originalQuery),
+              calculateCategoryScore(knowledge, originalQuery, []),
+              [originalQuery]
+            ),
+            note: '予約変更に関するナレッジ',
+            pgroonga_score: 0.9,
+            question_sim: similarity(knowledge.question || '', originalQuery),
+            answer_sim: similarity(knowledge.answer || '', originalQuery)
+          }));
+          
+          // スコアでソート
+          results.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+          
+          console.log('>>> 予約変更検索: 結果を返します', JSON.stringify(results.map(r => ({ id: r.id, score: r.score, note: r.note }))));
+          return addSearchNotes(results, originalQuery);
+        }
+      } catch (error) {
+        console.error('>>> 予約変更検索: 検索中にエラーが発生しました', error);
+      }
+      console.log('>>> 予約変更検索: 関連ナレッジが見つかりませんでした');
+    }
+
+    // ★★★ if 文の直前にログを追加 ★★★
     console.log(`--- Checking for Luxury Car search trigger for query: "${originalQuery}" ---`);
     // 1. 専用トピック検索（最優先）
     // 外車駐車関連の専用検索
@@ -692,38 +762,40 @@ export async function searchKnowledge(
         originalQuery.includes('高級車')) {
       console.log('外車駐車関連のクエリを検出しました');
 
-      // ★★★ 修正: 内容ベースで専用ナレッジを優先検索し、なければ findMany ★★★
       try {
-        // 1. 内容ベースで専用ナレッジを検索
+        // 1. 内容ベースで専用ナレッジを優先検索
         console.log('>>> 外車検索: 内容ベースで専用ナレッジを検索します');
         const specificQuestion = "外車（BMW、ベンツ、アウディなど）で利用したいのですが？";
         const specificAnswer = "外車は場内保険の対象外となるため、お預かりできかねます。";
 
-        const dedicatedKnowledge = await prisma.knowledge.findFirst({
+        const dedicatedKnowledge = await prisma.knowledge.findMany({
           where: {
             OR: [
               { question: specificQuestion },
               { answer: specificAnswer },
             ],
           },
+          orderBy: {
+            updatedAt: 'desc',
+          },
+          take: 1,
         });
 
-        if (dedicatedKnowledge) {
-          console.log('>>> 外車検索: 内容ベースで専用ナレッジが見つかりました。これを返します。');
+        if (dedicatedKnowledge.length > 0) {
+          console.log('>>> 外車検索: 内容ベースで専用ナレッジが見つかりました。これを優先します。');
           const searchResult: SearchResult = {
-            ...dedicatedKnowledge, // Knowledgeの全フィールドを展開
-            score: 1.0, // 専用回答なので最高スコア
-            note: '外車利用に関する専用回答です', // ★★★ APIルートで判定するためのnote
-            pgroonga_score: 1.0, // 必要に応じて設定
-            question_sim: 1.0,  // 必要に応じて設定
-            answer_sim: 1.0     // 必要に応じて設定
+            ...dedicatedKnowledge[0],
+            score: 1.0,
+            note: '外車利用に関する専用回答です',
+            pgroonga_score: 1.0,
+            question_sim: 1.0,
+            answer_sim: 1.0
           };
           results = [searchResult];
-          return addSearchNotes(results, originalQuery);
         }
 
-        // 2. 専用ナレッジが見つからない場合、通常の findMany 検索
-        console.log('>>> 外車検索: 専用ナレッジが見つからなかったため、findManyで関連ナレッジを検索します');
+        // 2. 関連ナレッジの検索
+        console.log('>>> 外車検索: 関連ナレッジを検索します');
         const relatedKnowledge = await prisma.knowledge.findMany({
           where: {
             OR: [
@@ -731,42 +803,62 @@ export async function searchKnowledge(
               { answer: { contains: '外車' } },
               { question: { contains: '高級車' } },
               { answer: { contains: '高級車' } },
+              { question: { contains: 'レクサス' } },
+              { answer: { contains: 'レクサス' } },
+              { question: { contains: 'BMW' } },
+              { answer: { contains: 'BMW' } },
+              { question: { contains: 'ベンツ' } },
+              { answer: { contains: 'ベンツ' } },
               { main_category: '車種' },
               { main_category: '利用制限' },
               { sub_category: '外車' },
             ],
-            // 専用ナレッジが見つからなかった場合、それを除外する（任意）
-            // NOT: {
-            //   OR: [
-            //     { question: specificQuestion },
-            //     { answer: specificAnswer },
-            //   ]
-            // }
+            NOT: {
+              OR: [
+                { question: specificQuestion },
+                { answer: specificAnswer },
+              ]
+            }
           },
-          orderBy: {
-            updatedAt: 'desc',
-          },
-          take: 3, // 上位3件を取得
+          orderBy: [
+            { main_category: 'desc' }, // 車種や利用制限を優先
+            { updatedAt: 'desc' },     // 次に更新日時
+          ],
+          take: 5, // 上位5件を取得
         });
 
         console.log(`>>> 外車検索: findMany で ${relatedKnowledge.length} 件見つかりました`);
 
         if (relatedKnowledge.length > 0) {
-          results = relatedKnowledge.map((knowledge) => ({
-            ...knowledge, // Knowledgeの全フィールドを展開
-            score: 0.8, // 通常検索なので少しスコアを下げる
-            note: '外車関連のナレッジ'
-            // pgroonga_score など他のスコアはここでは計算しない (必要なら追加)
+          const relatedResults = relatedKnowledge.map((knowledge) => ({
+            ...knowledge,
+            score: calculateSearchScore(
+              0.8, // 基本スコア
+              similarity(knowledge.question || '', originalQuery),
+              similarity(knowledge.answer || '', originalQuery),
+              calculateCategoryScore(knowledge, originalQuery, []),
+              [originalQuery]
+            ),
+            note: '外車関連のナレッジ',
+            pgroonga_score: 0.8,
+            question_sim: similarity(knowledge.question || '', originalQuery),
+            answer_sim: similarity(knowledge.answer || '', originalQuery)
           }));
-          console.log('>>> 外車検索: findManyの結果を返します', JSON.stringify(results));
+
+          // 専用ナレッジと関連ナレッジを結合
+          results = [...results, ...relatedResults];
+          
+          // スコアでソート（デフォルト値を0に設定）
+          results.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+          
+          console.log('>>> 外車検索: 結果を返します', JSON.stringify(results));
           return addSearchNotes(results, originalQuery);
         }
 
       } catch (error) {
-        console.error('>>> 外車検索: 専用検索またはfindManyでエラー', error);
+        console.error('>>> 外車検索: 検索中にエラーが発生しました', error);
       }
       console.log('>>> 外車検索: 関連ナレッジが見つかりませんでした');
-      // ★★★ 修正ここまで ★★★
     }
 
     // ★★★ if 文の直前にログを追加 ★★★
@@ -776,78 +868,189 @@ export async function searchKnowledge(
         (originalQuery.includes('線') || originalQuery.includes('便')))) {
       console.log('国際線関連のクエリを検出しました');
 
-      // ★★★ 修正: 内容ベースで専用ナレッジを優先検索し、なければ findMany ★★★
       try {
-        // 1. 内容ベースで専用ナレッジを検索
+        // 1. 内容ベースで専用ナレッジを優先検索
         console.log('>>> 国際線検索: 内容ベースで専用ナレッジを検索します');
         const specificQuestion = "国際線の利用は可能ですか？";
         const specificAnswer = "当駐車場は国内線ご利用のお客様専用となっております。";
 
-        const dedicatedKnowledge = await prisma.knowledge.findFirst({
+        const dedicatedKnowledge = await prisma.knowledge.findMany({
           where: {
             OR: [
               { question: specificQuestion },
               { answer: specificAnswer }
             ]
-          }
+          },
+          orderBy: {
+            updatedAt: 'desc',
+          },
+          take: 1,
         });
 
-        if (dedicatedKnowledge) {
-          console.log('>>> 国際線検索: 内容ベースで専用ナレッジが見つかりました。これを返します。');
+        if (dedicatedKnowledge.length > 0) {
+          console.log('>>> 国際線検索: 内容ベースで専用ナレッジが見つかりました。これを優先します。');
           const searchResult: SearchResult = {
-            ...dedicatedKnowledge, // Knowledgeの全フィールドを展開
-            score: 1.0, // 専用回答なので最高スコア
-            note: '国際線利用に関する専用回答です', // ★★★ APIルートで判定するためのnote
-            pgroonga_score: 1.0, // 必要に応じて設定
-            question_sim: 1.0,  // 必要に応じて設定
-            answer_sim: 1.0     // 必要に応じて設定
+            ...dedicatedKnowledge[0],
+            score: 1.0,
+            note: '国際線利用に関する専用回答です',
+            pgroonga_score: 1.0,
+            question_sim: 1.0,
+            answer_sim: 1.0
           };
           results = [searchResult];
-          return addSearchNotes(results, originalQuery);
         }
 
-        // 2. 専用ナレッジが見つからない場合、通常の findMany 検索
-        console.log('>>> 国際線検索: 専用ナレッジが見つからなかったため、findManyで関連ナレッジを検索します');
+        // 2. 関連ナレッジの検索
+        console.log('>>> 国際線検索: 関連ナレッジを検索します');
         const relatedKnowledge = await prisma.knowledge.findMany({
           where: {
             OR: [
               { question: { contains: '国際線' } },
               { answer: { contains: '国際線' } },
+              { question: { contains: '国際便' } },
+              { answer: { contains: '国際便' } },
+              { question: { contains: '国内線' } },
+              { answer: { contains: '国内線' } },
               { main_category: 'フライト情報' },
               { main_category: '利用制限' },
+              { sub_category: '国際線' },
             ],
-            // 専用ナレッジが見つからなかった場合、それを除外する（任意）
-            // NOT: {
-            //   OR: [
-            //     { question: specificQuestion },
-            //     { answer: specificAnswer }
-            //   ]
-            // }
+            NOT: {
+              OR: [
+                { question: specificQuestion },
+                { answer: specificAnswer }
+              ]
+            }
           },
-          orderBy: {
-            updatedAt: 'desc',
-          },
-          take: 3, // 上位3件を取得
+          orderBy: [
+            { main_category: 'desc' }, // フライト情報や利用制限を優先
+            { updatedAt: 'desc' },     // 次に更新日時
+          ],
+          take: 5, // 上位5件を取得
         });
 
         console.log(`>>> 国際線検索: findMany で ${relatedKnowledge.length} 件見つかりました`);
 
         if (relatedKnowledge.length > 0) {
-          results = relatedKnowledge.map((knowledge) => ({
-            ...knowledge, // Knowledgeの全フィールドを展開
-            score: 0.8, // 通常検索なので少しスコアを下げる
-            note: '国際線関連のナレッジ'
-            // pgroonga_score など他のスコアはここでは計算しない (必要なら追加)
+          const relatedResults = relatedKnowledge.map((knowledge) => ({
+            ...knowledge,
+            score: calculateSearchScore(
+              0.8, // 基本スコア
+              similarity(knowledge.question || '', originalQuery),
+              similarity(knowledge.answer || '', originalQuery),
+              calculateCategoryScore(knowledge, originalQuery, []),
+              [originalQuery]
+            ),
+            note: '国際線関連のナレッジ',
+            pgroonga_score: 0.8,
+            question_sim: similarity(knowledge.question || '', originalQuery),
+            answer_sim: similarity(knowledge.answer || '', originalQuery)
           }));
-          console.log('>>> 国際線検索: findManyの結果を返します', JSON.stringify(results));
+
+          // 専用ナレッジと関連ナレッジを結合
+          results = [...results, ...relatedResults];
+          
+          // スコアでソート（デフォルト値を0に設定）
+          results.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+          
+          console.log('>>> 国際線検索: 結果を返します', JSON.stringify(results));
           return addSearchNotes(results, originalQuery);
         }
 
       } catch (error) {
-        console.error('>>> 国際線検索: 専用検索またはfindManyでエラー', error);
+        console.error('>>> 国際線検索: 検索中にエラーが発生しました', error);
       }
       console.log('>>> 国際線検索: 関連ナレッジが見つかりませんでした');
-      // ★★★ 修正ここまで ★★★
+    }
+    
+    // キャンセル関連の検索
+    if (originalQuery.includes('キャンセル') || 
+        originalQuery.includes('解約') || 
+        originalQuery.includes('取り消し')) {
+      console.log('キャンセル関連のクエリを検出しました');
+
+      try {
+        const cancelKnowledge = await prisma.knowledge.findMany({
+          where: {
+            OR: [
+              { main_category: 'キャンセル' },
+              { sub_category: 'キャンセル' },
+              { detail_category: { contains: 'キャンセル' } },
+              { question: { contains: 'キャンセル' } },
+              { answer: { contains: 'キャンセル' } }
+            ]
+          },
+          orderBy: {
+            updatedAt: 'desc'
+          }
+        });
+
+        if (cancelKnowledge.length > 0) {
+          const cancelResults = cancelKnowledge.map(knowledge => {
+            // キャンセル料支払いに関する特別なスコアリング
+            const isPaymentRelated = 
+              (knowledge.question?.includes('支払') || knowledge.answer?.includes('支払')) &&
+              (originalQuery.includes('支払') || originalQuery.includes('料金') || originalQuery.includes('費用'));
+            
+            // 支払い関連の詳細度に基づいてベーススコアを調整
+            const baseScore = isPaymentRelated ? 
+              (knowledge.detail_category?.includes('支払') ? 0.95 : 0.94) : 
+              (knowledge.detail_category?.includes('手続') ? 0.93 : 0.9);
+
+            // 質問と回答の類似度を計算
+            const questionSim = similarity(knowledge.question || '', originalQuery);
+            const answerSim = similarity(knowledge.answer || '', originalQuery);
+            
+            // カテゴリスコアを計算
+            const categoryScore = calculateCategoryScore(knowledge, originalQuery, []);
+            
+            // 最終スコアを計算
+            const score = calculateSearchScore(
+              baseScore,
+              Math.max(questionSim, answerSim),
+              categoryScore,
+              categoryScore,
+              [originalQuery]
+            );
+
+            return {
+              ...knowledge,
+              score,
+              note: isPaymentRelated ? 'キャンセル料支払いに関する情報です' : 'キャンセル手続きに関する情報です',
+              pgroonga_score: baseScore,
+              question_sim: questionSim,
+              answer_sim: answerSim
+            };
+          });
+
+          // スコアでソート（スコアが同じ場合は支払い関連を優先）
+          cancelResults.sort((a, b) => {
+            const scoreDiff = (b.score ?? 0) - (a.score ?? 0);
+            if (scoreDiff !== 0) return scoreDiff;
+            
+            // スコアが同じ場合の優先順位
+            const aIsPayment = a.detail_category?.includes('支払') ?? false;
+            const bIsPayment = b.detail_category?.includes('支払') ?? false;
+            if (aIsPayment !== bIsPayment) return bIsPayment ? 1 : -1;
+            
+            // それでも同じ場合はIDの小さい方を優先
+            return a.id - b.id;
+          });
+          
+          console.log('キャンセル関連検索結果（改善版）:', 
+            cancelResults.map(r => ({ 
+              id: r.id, 
+              score: r.score, 
+              note: r.note,
+              detail: r.detail_category
+            }))
+          );
+          
+          return addSearchNotes(cancelResults, originalQuery);
+        }
+      } catch (error) {
+        console.error('キャンセル関連検索中にエラーが発生しました:', error);
+      }
     }
     
     // 2. タグベースの検索（特定のタグが指定された場合）
@@ -867,285 +1070,158 @@ export async function searchKnowledge(
       }
     }
     
-    // ★★★ 手順3の try...catch ブロックを削除 & 再挿入 ★★★
-    // 3. PGroonga全文検索（標準の前処理クエリを使用）
+    // 3. ハイブリッド検索（修正版 - 確実にナレッジを見つける）
     try {
-      console.log('PGroonga全文検索を実行（標準クエリ使用）');
-      results = await prisma.$queryRaw<SearchResult[]>`
-        SELECT 
-          k.id,
-          k.main_category,
-          k.sub_category,
-          k.detail_category,
-          k.question,
-          k.answer,
-          k.is_template,
-          k.usage,
-          k.note,
-          k.issue,
-          k."createdAt",
-          k."updatedAt",
-          pgroonga_score(k.tableoid, k.ctid) AS pgroonga_score,
-          similarity(COALESCE(k.question, ''), ${originalQuery}) as question_sim,
-          similarity(COALESCE(k.answer, ''), ${originalQuery}) as answer_sim
-        FROM "Knowledge" k
-        WHERE 
-          k.question &@~ ${standardProcessedQuery}
-          OR k.answer &@~ ${standardProcessedQuery}
-          OR k.main_category &@~ ${standardProcessedQuery}
-          OR k.sub_category &@~ ${standardProcessedQuery}
-          OR k.detail_category &@~ ${standardProcessedQuery}
-        ORDER BY
-          pgroonga_score DESC,
-          question_sim DESC,
-          answer_sim DESC
-        LIMIT 10
-      `;
-      
-      console.log(`PGroonga全文検索（標準）で ${results.length} 件の結果が見つかりました`);
-      
-      if (results.length > 0) {
-        results = results.map(result => ({
-          ...result,
-          score: calculateScore(result, originalQuery),
-          note: 'PGroonga全文検索で見つかりました'
-        }));
+      console.log('直接SQL検索を実行');
+      if (originalQuery && originalQuery.trim() !== '') {
+        // 「の」を含む複合キーワード検索のための処理
+        const hasCompoundKeyword = originalQuery.includes('の');
+        let firstPart = '';
+        let secondPart = '';
         
-        return addSearchNotes(results, originalQuery);
-      }
-    } catch (error) {
-      console.error('PGroonga全文検索（標準）でエラーが発生しました:', error);
-    }
-    // ★★★ 再挿入ここまで ★★★
-
-    // ★★★ 以下の try...catch ブロック全体をコメントアウト ★★★
-    /*
-    // 4. 拡張クエリでのPGroonga全文検索
-    try {
-      console.log('PGroonga全文検索を実行（拡張クエリ使用）');
-      results = await prisma.$queryRaw<SearchResult[]>`
-        SELECT 
-          k.id,
-          k.main_category,
-          k.sub_category,
-          k.detail_category,
-          k.question,
-          k.answer,
-          k.is_template,
-          k.usage,
-          k.note,
-          k.issue,
-          k."createdAt",
-          k."updatedAt",
-          pgroonga_score(k.tableoid, k.ctid) AS pgroonga_score,
-          similarity(COALESCE(k.question, ''), ${originalQuery}) as question_sim,
-          similarity(COALESCE(k.answer, ''), ${originalQuery}) as answer_sim
-        FROM "Knowledge" k
-        WHERE 
-          k.question &@~ ${enhancedProcessedQuery}
-          OR k.answer &@~ ${enhancedProcessedQuery}
-          OR k.main_category &@~ ${standardProcessedQuery}
-          OR k.sub_category &@~ ${standardProcessedQuery}
-          OR k.detail_category &@~ ${standardProcessedQuery}
-        ORDER BY
-          pgroonga_score DESC,
-          question_sim DESC,
-          answer_sim DESC
-        LIMIT 10
-      `;
-      
-      console.log(`PGroonga全文検索（拡張）で ${results.length} 件の結果が見つかりました`);
-      
-      if (results.length > 0) {
-        results = results.map(result => ({
-          ...result,
-          score: calculateScore(result, originalQuery),
-          note: 'PGroonga拡張検索で見つかりました'
-        }));
-        
-        return addSearchNotes(results, originalQuery);
-      }
-    } catch (error) {
-      console.error('PGroonga全文検索（拡張）でエラーが発生しました:', error);
-    }
-    */
-    // ★★★ コメントアウトここまで ★★★
-    
-    // ★★★ 以下の try...catch ブロック全体をコメントアウト ★★★
-    /*
-    // 5. 単語マッチング検索（標準の前処理クエリを使用）
-    try {
-      console.log('単語マッチング検索を実行（標準クエリ使用）');
-      results = await prisma.$queryRaw<SearchResult[]>`
-        SELECT 
-          k.id,
-          k.main_category,
-          k.sub_category,
-          k.detail_category,
-          k.question,
-          k.answer,
-          k.is_template,
-          k.usage,
-          k.note,
-          k.issue,
-          k."createdAt",    // ★★★ 引用符で囲む ★★★
-          k."updatedAt",    // ★★★ 引用符で囲む ★★★
-          pgroonga_score(k.tableoid, k.ctid) AS pgroonga_score,
-          similarity(COALESCE(k.question, ''), ${originalQuery}) as question_sim,
-          similarity(COALESCE(k.answer, ''), ${originalQuery}) as answer_sim
-        FROM "Knowledge" k
-        WHERE 
-          k.question &@ ${standardProcessedQuery}
-          OR k.answer &@ ${standardProcessedQuery}
-          OR k.main_category &@ ${standardProcessedQuery}
-          OR k.sub_category &@ ${standardProcessedQuery}
-          OR k.detail_category &@ ${standardProcessedQuery}
-        ORDER BY
-          pgroonga_score DESC,
-          question_sim DESC,
-          answer_sim DESC
-        LIMIT 10
-      `;
-      
-      console.log(`単語マッチング検索（標準）で ${results.length} 件の結果が見つかりました`);
-      
-      if (results.length > 0) {
-        results = results.map(result => ({
-          ...result,
-          score: calculateScore(result, originalQuery) * 0.9,
-          note: '単語マッチング検索で見つかりました'
-        }));
-        
-        return addSearchNotes(results, originalQuery);
-      }
-    } catch (error) {
-      console.error('単語マッチング検索（標準）でエラーが発生しました:', error);
-    }
-    */
-    // ★★★ コメントアウトここまで ★★★
-    
-    // ★★★ 以下のコメントブロックのコメントアウトを解除 ★★★
-    /* // この行を削除
-    // 6. 拡張クエリでの単語マッチング検索
-    try {
-      console.log('単語マッチング検索を実行（拡張クエリ使用）');
-      results = await prisma.$queryRaw<SearchResult[]>`
-        SELECT 
-          k.id,
-          k.main_category,
-          k.sub_category,
-          k.detail_category,
-          k.question,
-          k.answer,
-          k.is_template,
-          k.usage,
-          k.note,
-          k.issue,
-          k."createdAt", // ★★★ 引用符で囲む ★★★
-          k."updatedAt", // ★★★ 引用符で囲む ★★★
-          pgroonga_score(k.tableoid, k.ctid) AS pgroonga_score,
-          similarity(COALESCE(k.question, ''), ${originalQuery}) as question_sim,
-          similarity(COALESCE(k.answer, ''), ${originalQuery}) as answer_sim
-        FROM "Knowledge" k
-        WHERE 
-          k.question &@ ${enhancedProcessedQuery}
-          OR k.answer &@ ${enhancedProcessedQuery}
-          OR k.main_category &@ ${standardProcessedQuery}
-          OR k.sub_category &@ ${standardProcessedQuery}
-          OR k.detail_category &@ ${standardProcessedQuery}
-        ORDER BY
-          pgroonga_score DESC,
-          question_sim DESC,
-          answer_sim DESC
-        LIMIT 10
-      `;
-      
-      console.log(`単語マッチング検索（拡張）で ${results.length} 件の結果が見つかりました`);
-      
-      if (results.length > 0) {
-        results = results.map(result => ({
-          ...result,
-          score: calculateScore(result, originalQuery) * 0.85,
-          note: '拡張単語マッチング検索で見つかりました'
-        }));
-        
-        return addSearchNotes(results, originalQuery);
-      }
-    } catch (error) {
-      console.error('単語マッチング検索（拡張）でエラーが発生しました:', error);
-    }
-    */ // この行を削除
-    // ★★★ コメントアウト解除ここまで ★★★
-    
-    // 7. ILIKE検索（部分一致）
-    try {
-      console.log('ILIKE検索を実行（部分一致）');
-      
-      // 単語に分割して検索
-      const keywords = standardProcessedQuery.split(/\s+/).filter(k => k.length > 1);
-      const orConditions: Prisma.KnowledgeWhereInput[] = [];
-      
-      for (const keyword of keywords) {
-        if (keyword.length >= 2) {
-          orConditions.push(
-            { question: { contains: keyword, mode: 'insensitive' } },
-            { answer: { contains: keyword, mode: 'insensitive' } },
-            { main_category: { contains: keyword, mode: 'insensitive' } },
-            { sub_category: { contains: keyword, mode: 'insensitive' } },
-            { detail_category: { contains: keyword, mode: 'insensitive' } }
-          );
+        if (hasCompoundKeyword) {
+          const parts = originalQuery.split('の');
+          firstPart = parts[0].trim();
+          secondPart = parts.length > 1 ? parts[1].trim() : '';
+          console.log(`複合キーワード検出: 前半="${firstPart}", 後半="${secondPart}"`);
         }
-      }
-      
-      // キーワードがない場合は元のクエリを使用
-      if (orConditions.length === 0) {
-        orConditions.push(
-          { question: { contains: originalQuery, mode: 'insensitive' } },
-          { answer: { contains: originalQuery, mode: 'insensitive' } }
-        );
-      }
-      
-      const prismaResults = await prisma.knowledge.findMany({
-        where: {
-          OR: orConditions
-        },
-        orderBy: {
-          updatedAt: 'desc'
-        },
-        take: 10
-      });
-      
-      console.log(`ILIKE検索で ${prismaResults.length} 件の結果が見つかりました`);
-      
-      if (prismaResults.length > 0) {
-        // 各結果に類似度スコアを追加
-        const resultsWithScore = await Promise.all(
-          prismaResults.map(async (result) => {
-            const questionSim = result.question 
-              ? similarity(result.question, originalQuery) 
-              : 0;
-            const answerSim = result.answer 
-              ? similarity(result.answer, originalQuery) 
-              : 0;
+
+        // SQLインジェクション防止のためPrisma.sqlを使用
+        const whereConditions = [];
+
+        // 基本検索条件
+        whereConditions.push(Prisma.sql`k.question ILIKE ${'%' + originalQuery + '%'}`);
+        whereConditions.push(Prisma.sql`k.answer ILIKE ${'%' + originalQuery + '%'}`);
+        whereConditions.push(Prisma.sql`k.detail_category ILIKE ${'%' + originalQuery + '%'}`);
+        whereConditions.push(Prisma.sql`k.main_category ILIKE ${'%' + originalQuery + '%'}`);
+        whereConditions.push(Prisma.sql`k.sub_category ILIKE ${'%' + originalQuery + '%'}`);
+        whereConditions.push(Prisma.sql`k.sub_category = ${originalQuery}`);
+
+        // 複合キーワード検索条件
+        if (hasCompoundKeyword && firstPart && secondPart) {
+          // サブカテゴリに第一キーワードが含まれ、質問・回答・詳細カテゴリに第二キーワードが含まれる
+          whereConditions.push(Prisma.sql`(
+            k.sub_category ILIKE ${'%' + firstPart + '%'} AND 
+            (
+              k.question ILIKE ${'%' + secondPart + '%'} OR 
+              k.answer ILIKE ${'%' + secondPart + '%'} OR 
+              k.detail_category ILIKE ${'%' + secondPart + '%'}
+            )
+          )`);
+        }
+
+        // 最終的なWHERE句を作成
+        const whereClause = Prisma.sql`(${Prisma.join(whereConditions, ' OR ')})`;
+
+        // 結果の順序付け
+        results = await prisma.$queryRaw<SearchResult[]>`
+          SELECT
+            k.id, k.main_category, k.sub_category, k.detail_category, k.question, k.answer,
+            k.is_template, k.usage, k.note, k.issue, k."createdAt", k."updatedAt",
+            0.9 AS pgroonga_score,
+            similarity(COALESCE(k.question, ''), ${originalQuery}) as question_sim,
+            similarity(COALESCE(k.answer, ''), ${originalQuery}) as answer_sim
+          FROM "Knowledge" k
+          WHERE ${whereClause}
+          ORDER BY
+            CASE
+              WHEN k.sub_category = ${originalQuery} THEN 1
+              WHEN k.sub_category ILIKE ${'%' + originalQuery + '%'} THEN 2
+              WHEN k.question ILIKE ${'%' + originalQuery + '%'} THEN 3
+              WHEN k.answer ILIKE ${'%' + originalQuery + '%'} THEN 4
+              ELSE 5
+            END,
+            k."updatedAt" DESC
+          LIMIT 20
+        `;
+        
+        console.log(`直接SQL検索で ${results.length} 件のナレッジが見つかりました`);
+        
+        if (results.length > 0) {
+          // 検索結果にスコアと注釈を追加
+          results = results.map(entry => {
+            // スコアと注釈を初期化
+            let score = 0;
+            let note = '直接SQL検索で見つかりました';
+            
+            // サブカテゴリ完全一致
+            if (entry.sub_category === originalQuery) {
+              score = 0.95;
+              note = 'カテゴリ完全一致で見つかりました';
+            } 
+            // サブカテゴリ部分一致
+            else if (entry.sub_category?.toLowerCase().includes(originalQuery.toLowerCase())) {
+              score = 0.9;
+              note = 'カテゴリ部分一致で見つかりました';
+            }
+            // 複合キーワード一致（例：「キャンセルの方法」）
+            else if (hasCompoundKeyword && firstPart && secondPart) {
+              // サブカテゴリが第一キーワードに一致
+              const matchesFirstKeyword = entry.sub_category?.toLowerCase().includes(firstPart.toLowerCase()) || false;
+              
+              // 詳細カテゴリが第二キーワードに関連する
+              const detailMatches = entry.detail_category?.toLowerCase().includes(secondPart.toLowerCase()) || false;
+              
+              if (matchesFirstKeyword && detailMatches) {
+                score = 0.94;
+                note = `「${firstPart}」のカテゴリで「${secondPart}」に関する詳細情報が見つかりました`;
+              } else if (matchesFirstKeyword) {
+                score = 0.93;
+                note = '複合キーワード検索で見つかりました';
+              } else {
+                score = calculateScore({ 
+                  id: entry.id,
+                  question: entry.question,
+                  answer: entry.answer,
+                  main_category: entry.main_category,
+                  sub_category: entry.sub_category,
+                  detail_category: entry.detail_category,
+                  pgroonga_score: entry.pgroonga_score,
+                  question_sim: entry.question_sim,
+                  answer_sim: entry.answer_sim
+                } as SearchResult, originalQuery);
+              }
+            }
+            // その他の一致
+            else {
+              score = calculateScore({ 
+                id: entry.id,
+                question: entry.question,
+                answer: entry.answer,
+                main_category: entry.main_category,
+                sub_category: entry.sub_category,
+                detail_category: entry.detail_category,
+                pgroonga_score: entry.pgroonga_score,
+                question_sim: entry.question_sim,
+                answer_sim: entry.answer_sim
+              } as SearchResult, originalQuery);
+            }
             
             return {
-              ...result,
-              question_sim: questionSim,
-              answer_sim: answerSim,
-              score: (questionSim * 0.7) + (answerSim * 0.3),
-              note: 'ILIKE検索で見つかりました'
-            } as SearchResult;
-          })
-        );
-        
-        // スコアで並べ替え
-        results = resultsWithScore.sort((a, b) => (b.score || 0) - (a.score || 0));
-        return addSearchNotes(results, originalQuery);
+              ...entry,
+              score,
+              note
+            };
+          });
+          
+          console.log('>>> 検索結果:', 
+                     JSON.stringify(results.map(r => ({ 
+                       id: r.id, 
+                       score: r.score, 
+                       note: r.note, 
+                       sub_category: r.sub_category,
+                       detail_category: r.detail_category
+                     }))));
+          return addSearchNotes(results, originalQuery);
+        }
+      } else {
+        console.log('オリジナルクエリが空のため、検索をスキップします。');
+        results = [];
       }
     } catch (error) {
-      console.error('ILIKE検索でエラーが発生しました:', error);
+      console.error('検索でエラーが発生しました:', error);
     }
-    
+
     // 8. 最新エントリのフォールバック（最終手段）
     console.log('関連する結果が見つからなかったため、最新のエントリを表示します');
     const latestResults = await prisma.knowledge.findMany({

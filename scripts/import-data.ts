@@ -4,8 +4,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const prisma = new PrismaClient();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// const __filename = fileURLToPath(import.meta.url); // <- コメントアウト
+// const __dirname = path.dirname(__filename);
 
 interface KnowledgeData {
   main_category?: string;
@@ -24,7 +24,8 @@ async function importKnowledgeData() {
     console.log('データインポート開始...');
     
     // CSVファイルを読み込む
-    const csvPath = path.join(__dirname, 'src', 'data', 'csv', 'production', 'knowledge_complaint_template.csv');
+    const projectRoot = path.resolve(__dirname, '..'); // プロジェクトルートを取得
+    const csvPath = path.join(projectRoot, 'src', 'data', 'csv', 'production', 'knowledge_cancel_method.csv'); // <- ファイル名を変更
     const csvData = fs.readFileSync(csvPath, 'utf8');
     
     // CSVをパース

@@ -34,6 +34,7 @@ model Knowledge {
   @@index([detail_category])
   @@index([answer], map: "knowledge_pgroonga_answer_idx")
   @@index([question], map: "knowledge_pgroonga_question_idx")
+
   @@index([search_vector], map: "knowledge_search_vector_gin_idx", type: Gin)
 }
 

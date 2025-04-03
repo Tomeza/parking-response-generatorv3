@@ -87,6 +87,9 @@ export default function Home() {
       setGenerationSteps(data.steps || []);
       setResponseId(data.responseId || null);
       
+      // 検索が完了したら履歴を再度取得して表示を更新
+      fetchResponseLogs();
+      
     } catch (error) {
       console.error('Error generating response:', error);
       setError('回答の生成中にエラーが発生しました。');
@@ -289,27 +292,27 @@ export default function Home() {
       {/* 履歴表示部分 */}
       {responseLogs.length > 0 && (
         <div className="mt-8">
-          <h2 className="text-xl font-bold mb-4">最近の検索履歴</h2>
+          <h2 className="text-xl font-bold mb-4 text-white">最近の検索履歴</h2>
           <div className="space-y-4">
             {responseLogs.map((log) => (
-              <div key={log.id} className="bg-white p-4 rounded-lg shadow">
+              <div key={log.id} className="bg-gray-800 p-4 rounded-lg shadow border border-gray-700">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-white">
                       {log.query}
                     </p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-400">
                       {formatDateToJapanese(new Date(log.created_at))}
                     </p>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-500">
-                      {log.response_count} 件の回答
+                    <span className="text-sm text-gray-400">
+                      {log.response_count || 0} 件の回答
                     </span>
                   </div>
                 </div>
                 {log.response && (
-                  <div className="mt-2 text-sm text-gray-600">
+                  <div className="mt-2 text-sm text-gray-300">
                     {log.response}
                   </div>
                 )}
