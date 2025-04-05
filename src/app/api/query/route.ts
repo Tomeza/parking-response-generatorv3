@@ -16,8 +16,13 @@ import { prisma } from '@/lib/db';
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const query = searchParams.get('q') || '';
+  const tags = searchParams.get('tags') || ''; // tags パラメータを取得
 
-  if (!query) {
+  // クエリとタグをデコード (念のため)
+  const decodedQuery = decodeURIComponent(query);
+  const decodedTags = decodeURIComponent(tags);
+
+  if (!decodedQuery) {
     return NextResponse.json(
       { error: '検索クエリが指定されていません' },
       { status: 400 }
@@ -25,13 +30,13 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    console.log('Query received:', query);
+    console.log('Query received:', decodedQuery);
+    console.log('Tags received:', decodedTags); // タグのログを追加
     
-    // ★★★ 修正: SearchResult 型を使用 ★★★
     let searchResults: SearchResult[] = []; 
     try {
-        // ★★★ 修正: searchKnowledge を呼び出す ★★★
-        const rawResults = await searchKnowledge(query); 
+        // searchKnowledge に decodedTags を渡す
+        const rawResults = await searchKnowledge(decodedQuery, decodedTags); 
         if (Array.isArray(rawResults)) {
             // SearchResult型に合わせてフィルタリング
             searchResults = rawResults.filter(
@@ -42,16 +47,16 @@ export async function GET(request: NextRequest) {
                     typeof item.answer === 'string'
             );
             
-            // 結果を確実にスコアでソート
-            searchResults.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-            console.log('Sorted search results:', searchResults.map(r => ({ id: r.id, score: r.score })));
+            // ★★★ 修正: 不要な再ソート処理を削除 ★★★
+            // searchResults.sort((a, b) => (b.score ?? 0) - (a.score ?? 0)); 
+            // ★★★ 修正: ログのタイトルを変更 (既にソート済みであることを示す) ★★★
+            console.log('Search results from searchKnowledge (already sorted):', searchResults.map(r => ({ id: r.id, score: r.score })));
         } else {
             // ★★★ 修正: searchKnowledge を使うようにログメッセージを更新 ★★★
-            console.warn(`searchKnowledge for query "${query}" did not return an array. Received:`, rawResults);
+            console.warn(`searchKnowledge for query "${decodedQuery}" with tags "${decodedTags}" did not return an array. Received:`, rawResults);
         }
     } catch(searchError) {
-        // ★★★ 修正: searchKnowledge を使うようにログメッセージを更新 ★★★
-        console.error(`Error during searchKnowledge for query "${query}":`, searchError);
+        console.error(`Error during searchKnowledge for query "${decodedQuery}" with tags "${decodedTags}":`, searchError); // ログにタグ情報追加
         // Keep searchResults as empty array
     }
 
@@ -61,7 +66,7 @@ export async function GET(request: NextRequest) {
       const notFoundResponse = {
         response: "申し訳ございませんが、ご質問に対する具体的な情報が見つかりませんでした。",
         steps: [
-          { step: "キーワード抽出", content: { query: query, terms: "-" } },
+          { step: "キーワード抽出", content: { query: decodedQuery, terms: "-" } },
           { step: "ナレッジ検索", content: { status: "失敗", reason: "関連情報なし", used: [] } },
           { step: "応答生成", content: { result: "フォールバック応答", template: "N/A", reason: "情報なし" } }
         ]
@@ -70,7 +75,7 @@ export async function GET(request: NextRequest) {
       // レスポンスをログに保存
       await prisma.responseLog.create({
         data: {
-          query: query,
+          query: decodedQuery,
           response: notFoundResponse.response,
           used_knowledge_ids: [],
           missing_tags: [],
@@ -89,7 +94,7 @@ export async function GET(request: NextRequest) {
     // キーワード抽出ステップ
     const keywordStep = {
       step: "キーワード抽出/前処理",
-      content: { query: query }
+      content: { query: decodedQuery }
     };
 
     // ナレッジ検索ステップ
@@ -144,7 +149,7 @@ export async function GET(request: NextRequest) {
     // レスポンスログを1回だけ保存
     await prisma.responseLog.create({
       data: {
-        query: query,
+        query: decodedQuery,
         response: finalResponseText,
         used_knowledge_ids: usedKnowledgeIds,
         missing_tags: [],
@@ -178,7 +183,7 @@ export async function GET(request: NextRequest) {
     try {
       await prisma.responseLog.create({
         data: {
-          query: query,
+          query: decodedQuery,
           response: "検索処理中にエラーが発生しました",
           used_knowledge_ids: [],
           missing_tags: [],
