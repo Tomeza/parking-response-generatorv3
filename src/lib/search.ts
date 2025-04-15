@@ -58,7 +58,11 @@ export async function searchKnowledge(query: string, tags?: string): Promise<Sea
     tokenizer = await tokenizerPromise;
     if (!tokenizer) {
       console.error('Kuromoji Tokenizer is not available.');
-      return [];
+      // Fallback to simple word splitting if tokenizer fails
+      const fallbackTerms = normalizedQuery
+        .split(/[\s、。．！？!?.]+/)
+        .filter(term => term.length > 1);
+      return simpleSearch(normalizedQuery, fallbackTerms);
     }
   }
 
@@ -82,34 +86,60 @@ export async function searchKnowledge(query: string, tags?: string): Promise<Sea
 
     console.log('[DEBUG] Final search terms for DB query:', finalSearchTerms);
 
-    // --- PGroongaクエリ構築 (Final Simplified Logic) ---
-    // WHERE句は常に動的OR検索（タグがあっても一旦無視）
-    const termConditions = finalSearchTerms.map(term => 
+    // --- 改善されたPGroongaクエリ構築 ---
+    // 完全一致に高いプライオリティを与える
+    const exactMatchCondition = Prisma.sql`(k.question &@~ ${normalizedQuery} OR k.answer &@~ ${normalizedQuery})`;
+    
+    // 各用語の条件を強化 - 各用語は AND 条件で結合
+    const termConditionsArray = finalSearchTerms.map(term => 
         Prisma.sql`(k.question &@~ ${term} OR k.answer &@~ ${term})`
     );
-    const fullQueryCondition = Prisma.sql`(k.question &@~ ${normalizedQuery} OR k.answer &@~ ${normalizedQuery})`
-    const whereClause = Prisma.join([fullQueryCondition, ...termConditions], " OR ");
-    console.log('[DEBUG] WHERE Clause (dynamic OR):', whereClause);
+    
+    // 少なくとも1つの条件は満たす必要がある
+    const termConditions = termConditionsArray.length > 0 
+        ? Prisma.sql`(${Prisma.join(termConditionsArray, ' OR ')})` 
+        : Prisma.sql`(TRUE)`;
+    
+    // カテゴリ検索条件を追加
+    const categoryConditions = finalSearchTerms.map(term => 
+        Prisma.sql`(k.main_category &@~ ${term} OR k.sub_category &@~ ${term} OR k.detail_category &@~ ${term})`
+    );
+    
+    const categoryCondition = categoryConditions.length > 0
+        ? Prisma.sql`(${Prisma.join(categoryConditions, ' OR ')})` 
+        : Prisma.sql`(FALSE)`;
+    
+    // WHERE 句の構築 - 完全一致、用語条件、カテゴリ条件を OR で結合
+    const whereClause = Prisma.sql`(${exactMatchCondition} OR ${termConditions} OR ${categoryCondition})`;
+    
+    console.log('[DEBUG] WHERE Clause (improved):', whereClause);
 
     const querySql = Prisma.sql`
       SELECT 
         k.id, k.main_category, k.sub_category, k.detail_category, k.question, k.answer, k.is_template, k.usage, k.note, k.issue, k."createdAt", k."updatedAt",
-        pgroonga_score(k.tableoid, k.ctid) AS pgroonga_score
+        pgroonga_score(k.tableoid, k.ctid) AS pgroonga_score,
+        pgroonga_score(k.tableoid, k.ctid) * CASE
+          WHEN k.question ILIKE ${`%${normalizedQuery}%`} THEN 2.0
+          ELSE 1.0
+        END AS adjusted_score
       FROM "Knowledge" k
-      WHERE ${whereClause} -- 動的OR検索
-      ORDER BY CASE 
-        WHEN k.is_template IS TRUE THEN 1 -- IS TRUE を使用
-        ELSE 0 
-      END DESC, 
-      pgroonga_score(k.tableoid, k.ctid) DESC -- 次にPGroongaスコア
-      LIMIT 10 -- 上限10件
+      WHERE ${whereClause}
+      ORDER BY 
+        CASE WHEN k.question ILIKE ${`%${normalizedQuery}%`} THEN 3
+             WHEN k.answer ILIKE ${`%${normalizedQuery}%`} THEN 2
+             WHEN k.is_template IS TRUE THEN 1 
+             ELSE 0 
+        END DESC,
+        adjusted_score DESC,
+        pgroonga_score(k.tableoid, k.ctid) DESC
+      LIMIT 10
     `;
 
-    console.log('[DEBUG] Executing Final Simplified PGroonga Query:', querySql);
+    console.log('[DEBUG] Executing Improved PGroonga Query:', querySql);
 
     const results = await prisma.$queryRaw<KnowledgeWithScore[]>(querySql);
 
-    console.log(`PGroonga検索結果 (Final): ${results.length}件`);
+    console.log(`PGroonga検索結果 (Improved): ${results.length}件`);
 
     const searchResults: SearchResult[] = results.map(result => ({
       ...result,
@@ -117,12 +147,46 @@ export async function searchKnowledge(query: string, tags?: string): Promise<Sea
       note: result.note || ''
     }));
 
-    console.log('ソート済み検索結果 (Final Simplified):', searchResults.map(r => ({ id: r.id, question: r.question, score: r.score })));
+    console.log('ソート済み検索結果 (Improved):', searchResults.map(r => ({ id: r.id, question: r.question, score: r.score })));
 
     return searchResults;
 
   } catch (error) {
-    console.error('Search Error (Final Simplified):', error);
+    console.error('Search Error (Improved):', error);
+    // Fallback to simple search if PGroonga fails
+    return simpleSearch(normalizedQuery, finalSearchTerms);
+  }
+}
+
+// シンプルな検索フォールバック関数
+async function simpleSearch(query: string, terms: string[]): Promise<SearchResult[]> {
+  console.log('Fallback simple search executing...');
+  
+  try {
+    const results = await prisma.knowledge.findMany({
+      where: {
+        OR: [
+          { question: { contains: query, mode: 'insensitive' as any } },
+          { answer: { contains: query, mode: 'insensitive' as any } },
+          ...terms.map(term => ({ 
+            OR: [
+              { question: { contains: term, mode: 'insensitive' as any } },
+              { answer: { contains: term, mode: 'insensitive' as any } }
+            ] as any
+          }))
+        ]
+      },
+      select: selectKnowledgeFields,
+      take: 10
+    });
+    
+    return results.map(r => ({ 
+      ...r, 
+      score: r.question?.toLowerCase().includes(query.toLowerCase()) ? 0.8 : 0.5,
+      note: 'シンプル検索結果' 
+    }));
+  } catch (fallbackError) {
+    console.error('Simple search error:', fallbackError);
     return [];
   }
 }

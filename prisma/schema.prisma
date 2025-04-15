@@ -34,8 +34,10 @@ model Knowledge {
   @@index([detail_category])
   @@index([answer], map: "knowledge_pgroonga_answer_idx")
   @@index([question], map: "knowledge_pgroonga_question_idx")
-
   @@index([search_vector], map: "knowledge_search_vector_gin_idx", type: Gin)
+  @@index([detail_category], map: "knowledge_pgroonga_detail_category_idx")
+  @@index([main_category], map: "knowledge_pgroonga_main_category_idx")
+  @@index([sub_category], map: "knowledge_pgroonga_sub_category_idx")
 }
 
 model Tag {
@@ -69,13 +71,13 @@ model ResponseLog {
   id                 Int        @id @default(autoincrement())
   query              String
   response           String
-  response_count     Int        @default(1) // この行を追加
   used_knowledge_ids Int[]
   missing_tags       String[]
   missing_alerts     String[]
   feedback           Boolean?
   created_at         DateTime   @default(now())
   knowledge_id       Int?
+  response_count     Int        @default(1)
   knowledge          Knowledge? @relation(fields: [knowledge_id], references: [id])
 }
 

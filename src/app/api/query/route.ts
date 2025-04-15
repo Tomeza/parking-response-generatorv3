@@ -6,9 +6,11 @@ import { NextRequest, NextResponse } from 'next/server';
 // ★★★ 修正: searchKnowledge をインポート ★★★
 // import { searchKnowledge, type SearchResult } from '@/lib/search'; 
 // ★★★ 修正: searchKnowledge と SearchResult を正しいパスからインポート ★★★
-import { searchKnowledge } from '@/lib/search'; 
-import { type SearchResult } from '@/lib/common-types';
-import { prisma } from '@/lib/db';
+import { searchKnowledge } from '../../../lib/search'; 
+import { type SearchResult } from '../../../lib/common-types';
+import { prisma } from '../../../lib/db';
+// アラートシステムをインポート（相対パスに修正）
+import { addMandatoryAlerts, detectAlertKeywords, AlertType } from '../../../lib/alert-system';
 
 // Removed unused mockResponse, reservationResponse, reservationChangeResponse variables
 // Removed unused isBusinessHoursQuery and getBusinessHoursFallbackResponse functions
@@ -32,6 +34,10 @@ export async function GET(request: NextRequest) {
   try {
     console.log('Query received:', decodedQuery);
     console.log('Tags received:', decodedTags); // タグのログを追加
+    
+    // クエリ内のアラートキーワードを検出
+    const detectedAlerts = detectAlertKeywords(decodedQuery);
+    console.log('Detected alerts:', detectedAlerts);
     
     let searchResults: SearchResult[] = []; 
     try {
@@ -63,12 +69,17 @@ export async function GET(request: NextRequest) {
     console.log('Search results count:', searchResults.length);
     
     if (searchResults.length === 0) { // Check based on the potentially filtered results
+      // 「情報が見つかりません」レスポンスにもアラートを追加
+      const notFoundMessage = "申し訳ございませんが、ご質問に対する具体的な情報が見つかりませんでした。";
+      const notFoundWithAlerts = addMandatoryAlerts(notFoundMessage);
+      
       const notFoundResponse = {
-        response: "申し訳ございませんが、ご質問に対する具体的な情報が見つかりませんでした。",
+        response: notFoundWithAlerts,
         steps: [
           { step: "キーワード抽出", content: { query: decodedQuery, terms: "-" } },
           { step: "ナレッジ検索", content: { status: "失敗", reason: "関連情報なし", used: [] } },
-          { step: "応答生成", content: { result: "フォールバック応答", template: "N/A", reason: "情報なし" } }
+          { step: "応答生成", content: { result: "フォールバック応答", template: "N/A", reason: "情報なし" } },
+          { step: "アラート追加", content: { alerts: ["国際線利用不可", "外車受入不可"] } }
         ]
       };
 
@@ -76,7 +87,7 @@ export async function GET(request: NextRequest) {
       await prisma.responseLog.create({
         data: {
           query: decodedQuery,
-          response: notFoundResponse.response,
+          response: notFoundWithAlerts,
           used_knowledge_ids: [],
           missing_tags: [],
           missing_alerts: [],
@@ -140,10 +151,25 @@ export async function GET(request: NextRequest) {
       }
     };
 
+    // すべての応答に必須アラートを追加
+    const originalResponse = finalResponseText;
+    finalResponseText = addMandatoryAlerts(finalResponseText);
+    
+    // アラート追加ステップ
+    const alertStep = {
+      step: "アラート追加",
+      content: {
+        original: originalResponse,
+        withAlerts: finalResponseText,
+        alerts: ["国際線利用不可", "外車受入不可"]
+      }
+    };
+
     const responseSteps = [
       keywordStep,
       knowledgeSearchStep,
       templateStep,
+      alertStep
     ];
     
     // レスポンスログを1回だけ保存
@@ -179,12 +205,16 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Error processing query:', error);
     
+    // エラー時でもアラートを追加
+    const errorMessage = "検索処理中にエラーが発生しました";
+    const errorWithAlerts = addMandatoryAlerts(errorMessage);
+    
     // エラー時のレスポンスログ保存
     try {
       await prisma.responseLog.create({
         data: {
           query: decodedQuery,
-          response: "検索処理中にエラーが発生しました",
+          response: errorWithAlerts,
           used_knowledge_ids: [],
           missing_tags: [],
           missing_alerts: [],
@@ -197,10 +227,11 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(
       { 
-        error: '検索処理中にエラーが発生しました', 
+        error: errorWithAlerts, 
         details: error.message,
         steps: [
-          { step: "エラー発生", content: { error: error.message } }
+          { step: "エラー発生", content: { error: error.message } },
+          { step: "アラート追加", content: { alerts: ["国際線利用不可", "外車受入不可"] } }
         ]
       },
       { status: 500 }
@@ -226,8 +257,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ answer: data.response });
   } catch (error) {
     console.error('Error processing query:', error);
+    
+    // エラーレスポンスにもアラートを追加
+    const errorMessage = "サーバーエラーが発生しました";
+    const errorWithAlerts = addMandatoryAlerts(errorMessage);
+    
     return NextResponse.json(
-      { error: 'サーバーエラーが発生しました' },
+      { error: errorWithAlerts },
       { status: 500 }
     );
   }
