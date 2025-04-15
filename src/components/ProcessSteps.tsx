@@ -2,6 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { ChevronDownIcon } from '@heroicons/react/24/solid';
+import { 
+  ProcessStep, 
+  AlertStepContent, 
+  KnowledgeStepContent, 
+  TraceStepContent, 
+  TemplateStepContent,
+  DateInfo, 
+  KnowledgeItem
+} from '../lib/common-types';
 
 interface StepProps {
   title: string;
@@ -31,17 +40,11 @@ function Step({ title, content, isOpen, onToggle }: StepProps) {
   );
 }
 
-interface DateInfo {
-  date: string;
-  type: string;
+interface ProcessStepsProps {
+  steps?: ProcessStep[];
 }
 
-interface KnowledgeItem {
-  id: number;
-  answer: string;
-}
-
-export function ProcessSteps({ steps = [] }: { steps?: any[] }) {
+export function ProcessSteps({ steps = [] }: ProcessStepsProps) {
   const [openStep, setOpenStep] = useState<number | null>(0); // 最初のステップを開いておく
   
   useEffect(() => {
@@ -59,8 +62,9 @@ export function ProcessSteps({ steps = [] }: { steps?: any[] }) {
       const knowledgeStep = steps.find(step => step.step === "ナレッジ検索");
       if (knowledgeStep) {
         console.log("Knowledge step content:", knowledgeStep.content);
-        if (knowledgeStep.content && knowledgeStep.content.used) {
-          console.log("Used knowledge items:", knowledgeStep.content.used.length);
+        const content = knowledgeStep.content as KnowledgeStepContent;
+        if (content && content.used) {
+          console.log("Used knowledge items:", content.used.length);
         }
       }
     }
@@ -77,7 +81,7 @@ export function ProcessSteps({ steps = [] }: { steps?: any[] }) {
   }
 
   // アラートワード検出のレンダリング
-  const renderAlertWordStep = (content: any) => {
+  const renderAlertWordStep = (content: AlertStepContent) => {
     if (!content) return <p>データがありません</p>;
     
     return (
@@ -119,7 +123,7 @@ export function ProcessSteps({ steps = [] }: { steps?: any[] }) {
   };
 
   // ナレッジ検索結果のレンダリング
-  const renderKnowledgeStep = (content: any) => {
+  const renderKnowledgeStep = (content: KnowledgeStepContent) => {
     if (!content) return <p>データがありません</p>;
     
     return (
@@ -159,7 +163,7 @@ export function ProcessSteps({ steps = [] }: { steps?: any[] }) {
   };
 
   // トレース情報のレンダリング
-  const renderTraceStep = (content: any) => {
+  const renderTraceStep = (content: TraceStepContent) => {
     if (!content) return <p>データがありません</p>;
     
     return (
@@ -188,7 +192,7 @@ export function ProcessSteps({ steps = [] }: { steps?: any[] }) {
   };
 
   // テンプレート適用情報のレンダリング
-  const renderTemplateStep = (content: any) => {
+  const renderTemplateStep = (content: TemplateStepContent) => {
     if (!content) return <p>データがありません</p>;
     
     return (
@@ -200,49 +204,56 @@ export function ProcessSteps({ steps = [] }: { steps?: any[] }) {
           </div>
         </div>
         
-        <div>
-          <h4 className="font-medium mb-1">理由:</h4>
-          <p className="text-sm">{content.reason}</p>
-        </div>
+        {content.variables && Object.keys(content.variables).length > 0 && (
+          <div>
+            <h4 className="font-medium mb-1">テンプレート変数:</h4>
+            <div className="bg-gray-700 p-2 rounded text-sm">
+              <ul>
+                {Object.entries(content.variables).map(([key, value], idx) => (
+                  <li key={idx}><span className="text-blue-300">{key}</span>: {value}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
 
-  // ステップの内容に応じたレンダリング
-  const renderStepContent = (step: any) => {
-    // ステップデータがないか、不正な形式の場合はJSON表示
+  // ステップごとの内容を表示
+  const renderStepContent = (step: ProcessStep) => {
     if (!step || !step.content) {
-      return <pre className="whitespace-pre-wrap">{JSON.stringify(step, null, 2)}</pre>;
+      return <p>データがありません</p>;
     }
     
-    // ステップの種類に応じてレンダリング
     switch (step.step) {
-      case 'アラートワード検出':
-        return renderAlertWordStep(step.content);
-      case 'ナレッジ検索':
-        return renderKnowledgeStep(step.content);
-      case 'トレース':
-        return renderTraceStep(step.content);
-      case 'テンプレート適用':
-        return renderTemplateStep(step.content);
+      case "アラートワード検出":
+        return renderAlertWordStep(step.content as AlertStepContent);
+      case "ナレッジ検索":
+        return renderKnowledgeStep(step.content as KnowledgeStepContent);
+      case "トレース・改善提案":
+        return renderTraceStep(step.content as TraceStepContent);
+      case "テンプレート適用":
+        return renderTemplateStep(step.content as TemplateStepContent);
       default:
-        return (
-          <pre className="whitespace-pre-wrap text-sm bg-[#1a202c] p-2 rounded overflow-auto max-h-[300px]">
-            {JSON.stringify(step.content, null, 2)}
-          </pre>
-        );
+        return <p>未定義のステップ: {step.step}</p>;
     }
   };
 
+  // ハンドラ: ステップの開閉
+  const handleToggle = (index: number) => {
+    setOpenStep(openStep === index ? null : index);
+  };
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 mb-4">
       {steps.map((step, index) => (
         <Step
           key={index}
-          title={`ステップ${index + 1}: ${step.step || '不明なステップ'}`}
+          title={step.step}
           content={renderStepContent(step)}
           isOpen={openStep === index}
-          onToggle={() => setOpenStep(openStep === index ? null : index)}
+          onToggle={() => handleToggle(index)}
         />
       ))}
     </div>

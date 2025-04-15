@@ -1,7 +1,7 @@
-import { Prisma, type Knowledge } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { prisma } from './db';
-import { SearchResult } from './common-types';
-// @ts-ignore
+import { SearchResult, KuromojiToken } from './common-types';
+// @ts-expect-error - kuromojiモジュールに型定義がありません
 import kuromoji from 'kuromoji'; // Kuromoji.jsをインポート
 
 // 結果に含めるKnowledgeモデルのカラムを選択
@@ -28,7 +28,7 @@ let tokenizer: kuromoji.Tokenizer<kuromoji.IpadicFeatures> | null = null;
 
 // PromiseでKuromojiの初期化をラップ
 const tokenizerPromise = new Promise<kuromoji.Tokenizer<kuromoji.IpadicFeatures> | null>((resolve, reject) => {
-  kuromoji.builder({ dicPath: 'node_modules/kuromoji/dict' }).build((err: Error | null, _tokenizer: any) => {
+  kuromoji.builder({ dicPath: 'node_modules/kuromoji/dict' }).build((err: Error | null, _tokenizer: kuromoji.Tokenizer<kuromoji.IpadicFeatures>) => {
     if (err) {
       console.error('Kuromoji tokenizer build error:', err);
       reject(err);
@@ -75,9 +75,9 @@ export async function searchKnowledge(query: string, tags?: string): Promise<Sea
     const tokens = tokenizer.tokenize(normalizedQuery);
 
     const searchTerms: string[] = tokens
-        .filter((token: any) => VALID_POS.some(pos => token.pos.startsWith(pos)))
-        .map((token: any) => token.basic_form === '*' ? token.surface_form : token.basic_form)
-        .filter((term: any): term is string => term !== null && term.length > 1);
+        .filter((token: KuromojiToken) => VALID_POS.some(pos => token.pos.startsWith(pos)))
+        .map((token: KuromojiToken) => token.basic_form === '*' ? token.surface_form : token.basic_form)
+        .filter((term: string) => term !== null && term.length > 1);
     const uniqueSearchTerms: string[] = [...new Set(searchTerms)];
     console.log('検索単語 (Kuromoji Final):', uniqueSearchTerms);
     if (uniqueSearchTerms.length > 0) {
@@ -162,17 +162,19 @@ export async function searchKnowledge(query: string, tags?: string): Promise<Sea
 async function simpleSearch(query: string, terms: string[]): Promise<SearchResult[]> {
   console.log('Fallback simple search executing...');
   
+  type InsensitiveMode = 'insensitive';
+  
   try {
     const results = await prisma.knowledge.findMany({
       where: {
         OR: [
-          { question: { contains: query, mode: 'insensitive' as any } },
-          { answer: { contains: query, mode: 'insensitive' as any } },
+          { question: { contains: query, mode: 'insensitive' as InsensitiveMode } },
+          { answer: { contains: query, mode: 'insensitive' as InsensitiveMode } },
           ...terms.map(term => ({ 
             OR: [
-              { question: { contains: term, mode: 'insensitive' as any } },
-              { answer: { contains: term, mode: 'insensitive' as any } }
-            ] as any
+              { question: { contains: term, mode: 'insensitive' as InsensitiveMode } },
+              { answer: { contains: term, mode: 'insensitive' as InsensitiveMode } }
+            ] 
           }))
         ]
       },
