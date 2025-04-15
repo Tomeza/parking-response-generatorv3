@@ -8,9 +8,7 @@ const nextConfig = {
   },
   eslint: {
     // ESLintエラーがあってもビルドを続行できるようにする
-    ignoreDuringBuilds: true,
-    // ESLintの実行を無効化
-    ignore: true
+    ignoreDuringBuilds: true
   }
 }
 
