@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { Prisma } from '@prisma/client';
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,8 +35,10 @@ export async function POST(request: NextRequest) {
         // 既存の重みを更新
         await prisma.feedbackWeight.update({
           where: {
-            query_pattern: queryPattern,
-            knowledge_id: updatedLog.knowledge_id,
+            query_pattern_knowledge_id: {
+              query_pattern: queryPattern,
+              knowledge_id: updatedLog.knowledge_id,
+            }
           },
           data: {
             positive_count: feedback ? existingWeight.positive_count + 1 : existingWeight.positive_count,

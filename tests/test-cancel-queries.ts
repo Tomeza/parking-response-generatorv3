@@ -1,4 +1,4 @@
-import { searchKnowledge } from './src/lib/search';
+import { searchKnowledge } from '@/lib/search';
 
 async function testCancelQueries() {
   const queries = [
@@ -31,7 +31,7 @@ async function testCancelQueries() {
           console.log(`ID: ${result.id}`);
           console.log(`質問: ${result.question}`);
           console.log(`回答: ${result.answer}`);
-          console.log(`スコア: ${result.final_score}`);
+          console.log(`スコア: ${result.score || 0}`);
           console.log(`-------------------`);
         });
         

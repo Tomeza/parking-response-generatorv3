@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
 export async function GET(request: Request) {
   try {
@@ -10,18 +11,30 @@ export async function GET(request: Request) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
-    const where = {
-      AND: [
-        search ? {
-          OR: [
-            { query: { contains: search, mode: 'insensitive' } },
-            { response: { contains: search, mode: 'insensitive' } }
-          ]
-        } : {},
-        startDate ? { created_at: { gte: new Date(startDate) } } : {},
-        endDate ? { created_at: { lte: new Date(endDate) } } : {}
-      ]
-    };
+    // クエリ条件の構築
+    const conditions: Prisma.ResponseLogWhereInput[] = [];
+    
+    if (search) {
+      conditions.push({
+        OR: [
+          { query: { contains: search } },
+          { response: { contains: search } }
+        ]
+      });
+    }
+    
+    if (startDate) {
+      conditions.push({ created_at: { gte: new Date(startDate) } });
+    }
+    
+    if (endDate) {
+      conditions.push({ created_at: { lte: new Date(endDate) } });
+    }
+    
+    // 検索条件をANDで結合
+    const where: Prisma.ResponseLogWhereInput = conditions.length > 0
+      ? { AND: conditions }
+      : {};
 
     const [total, logs] = await Promise.all([
       prisma.responseLog.count({ where }),

@@ -135,7 +135,7 @@ async function importTagData() {
     
     for (const knowledge of knowledgeEntries) {
       // カテゴリに基づいてタグを関連付け
-      const tagsToLink = [];
+      const tagsToLink: number[] = [];
       
       // メインカテゴリに基づくタグ付け
       if (knowledge.main_category?.includes('予約')) {

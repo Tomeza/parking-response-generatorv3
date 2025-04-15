@@ -1,4 +1,4 @@
-import { searchKnowledge } from '../src/lib/search.js';
+import { searchKnowledge } from '@/lib/search';
 
 async function testHoursQueries() {
   const queries = [
@@ -20,13 +20,8 @@ async function testHoursQueries() {
       console.log(`クエリ: "${query}" の検索結果`);
       console.log(`===================================`);
       
-      const searchResult = await searchKnowledge(query);
-      if (!searchResult) {
-        console.log("検索結果がありません。");
-        continue;
-      }
-
-      const results = searchResult.results;
+      const results = await searchKnowledge(query);
+      
       console.log(`検索結果数: ${results.length}`);
       
       if (results.length > 0) {
@@ -35,7 +30,7 @@ async function testHoursQueries() {
           console.log(`ID: ${result.id}`);
           console.log(`質問: ${result.question}`);
           console.log(`回答: ${result.answer}`);
-          console.log(`スコア: ${result.final_score ?? 'N/A'}`);
+          console.log(`スコア: ${result.score || 0}`);
           console.log(`-------------------`);
         });
         
