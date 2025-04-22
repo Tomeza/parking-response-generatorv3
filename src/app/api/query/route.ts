@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // ★★★ 修正: searchKnowledge をインポート ★★★
 // import { searchKnowledge, type SearchResult } from '@/lib/search'; 
 // ★★★ 修正: searchKnowledge と SearchResult を正しいパスからインポート ★★★
-import { searchKnowledge } from '../../../lib/search'; 
+import { searchKnowledge, getSearchMetrics, clearSearchCache } from '../../../lib/search'; 
 import { type SearchResult } from '../../../lib/common-types';
 import { prisma } from '../../../lib/db';
 // アラートシステムをインポート（相対パスに修正）
@@ -16,9 +16,21 @@ import { addMandatoryAlerts, detectAlertKeywords, AlertType } from '../../../lib
 // Removed unused isBusinessHoursQuery and getBusinessHoursFallbackResponse functions
 
 export async function GET(request: NextRequest) {
+  const searchStartTime = Date.now(); // 処理時間測定開始
   const searchParams = request.nextUrl.searchParams;
   const query = searchParams.get('q') || '';
   const tags = searchParams.get('tags') || ''; // tags パラメータを取得
+  const resetCache = searchParams.get('reset_cache') === 'true'; // キャッシュリセットフラグ
+
+  // リクエストがキャッシュリセットを要求している場合
+  if (resetCache) {
+    clearSearchCache();
+    return NextResponse.json({ 
+      message: '検索キャッシュをクリアしました', 
+      success: true,
+      timestamp: new Date().toISOString()
+    });
+  }
 
   // クエリとタグをデコード (念のため)
   const decodedQuery = decodeURIComponent(query);
@@ -73,6 +85,10 @@ export async function GET(request: NextRequest) {
       const notFoundMessage = "申し訳ございませんが、ご質問に対する具体的な情報が見つかりませんでした。";
       const notFoundWithAlerts = addMandatoryAlerts(notFoundMessage);
       
+      // 検索メトリクスを取得
+      const metrics = getSearchMetrics();
+      const searchTime = Date.now() - searchStartTime;
+      
       const notFoundResponse = {
         response: notFoundWithAlerts,
         steps: [
@@ -80,7 +96,11 @@ export async function GET(request: NextRequest) {
           { step: "ナレッジ検索", content: { status: "失敗", reason: "関連情報なし", used: [] } },
           { step: "応答生成", content: { result: "フォールバック応答", template: "N/A", reason: "情報なし" } },
           { step: "アラート追加", content: { alerts: ["国際線利用不可", "外車受入不可"] } }
-        ]
+        ],
+        performance: {
+          total_time_ms: searchTime,
+          search_metrics: metrics
+        }
       };
 
       // レスポンスをログに保存
@@ -186,6 +206,10 @@ export async function GET(request: NextRequest) {
       }
     });
 
+    // 検索メトリクスを取得
+    const metrics = getSearchMetrics();
+    const searchTime = Date.now() - searchStartTime;
+
     return NextResponse.json({
       response: finalResponseText,
       responseId: bestMatch.id,
@@ -199,7 +223,11 @@ export async function GET(request: NextRequest) {
         score: r.score,
         note: r.note,
         detail_category: r.detail_category
-      }))
+      })),
+      performance: {
+        total_time_ms: searchTime,
+        search_metrics: metrics
+      }
     });
 
   } catch (error: any) {
@@ -225,6 +253,10 @@ export async function GET(request: NextRequest) {
       console.error('Error saving error response log:', logError);
     }
 
+    // 検索メトリクスを取得
+    const metrics = getSearchMetrics();
+    const searchTime = Date.now() - searchStartTime;
+
     return NextResponse.json(
       { 
         error: errorWithAlerts, 
@@ -232,7 +264,11 @@ export async function GET(request: NextRequest) {
         steps: [
           { step: "エラー発生", content: { error: error.message } },
           { step: "アラート追加", content: { alerts: ["国際線利用不可", "外車受入不可"] } }
-        ]
+        ],
+        performance: {
+          total_time_ms: searchTime,
+          search_metrics: metrics
+        }
       },
       { status: 500 }
     );

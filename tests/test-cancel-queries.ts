@@ -1,4 +1,16 @@
-import { searchKnowledge } from '@/lib/search';
+// CommonJS形式でモジュールを読み込み
+const { searchKnowledge } = require('../src/lib/search');
+
+// 型定義
+interface SearchResult {
+  id: number;
+  question?: string;
+  answer: string;
+  score?: number;
+  main_category?: string;
+  sub_category?: string;
+  note?: string;
+}
 
 async function testCancelQueries() {
   const queries = [
@@ -27,7 +39,7 @@ async function testCancelQueries() {
       
       if (results.length > 0) {
         console.log("検索結果:");
-        results.slice(0, 2).forEach(result => {
+        results.slice(0, 2).forEach((result: SearchResult) => {
           console.log(`ID: ${result.id}`);
           console.log(`質問: ${result.question}`);
           console.log(`回答: ${result.answer}`);
@@ -47,4 +59,5 @@ async function testCancelQueries() {
   }
 }
 
+// 実行
 testCancelQueries(); 

@@ -25,7 +25,7 @@ async function importKnowledgeData() {
     
     // CSVファイルを読み込む
     const projectRoot = path.resolve(__dirname, '..'); // プロジェクトルートを取得
-    const csvPath = path.join(projectRoot, 'src', 'data', 'csv', 'production', 'knowledge_cancel_method.csv'); // <- ファイル名を変更
+    const csvPath = path.join(projectRoot, 'src', 'data', 'csv', 'production', 'knowledge_solo_shuttle.csv'); // <- ファイル名を変更
     const csvData = fs.readFileSync(csvPath, 'utf8');
     
     // CSVをパース
@@ -44,8 +44,23 @@ async function importKnowledgeData() {
       const data: KnowledgeData = {};
       
       headers.forEach((header: string, index: number) => {
-        if (values[index]) {
-          data[header.trim() as keyof KnowledgeData] = values[index].trim();
+        if (values[index] !== undefined) { // 値が存在するかチェック
+          let value = values[index].trim(); // まずtrim
+
+          // 前後のダブルクォートを除去
+          if (value.startsWith('"') && value.endsWith('"')) {
+            value = value.substring(1, value.length - 1);
+            // ダブルクォート内で "" となっているエスケープされたクォートを " に戻す (必要に応じて)
+            // value = value.replace(/""/g, '"');
+          }
+
+          // answerフィールドの場合、改行文字 \n を削除 (以前のリクエストのまま)
+          // ※ もし改行を残したい場合は、この if ブロックを削除またはコメントアウト
+          // if (header.trim() === 'answer') { 
+          //    value = value.replace(/\\n/g, '').replace(/\\r/g, '');
+          // }
+
+          data[header.trim() as keyof KnowledgeData] = value;
         }
       });
       
