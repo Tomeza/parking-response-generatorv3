@@ -6,14 +6,22 @@ const anthropic = new Anthropic({
 });
 
 // 回答の清書を行う関数
-export async function refineResponse(originalResponse: string, tone: 'formal' | 'casual' = 'formal') {
+export async function refineResponse(
+  originalResponse: string, 
+  tone: 'formal' | 'casual' = 'formal',
+  knowledgeIds?: number[]
+) {
   try {
-    const prompt = `あなたは駐車場の問い合わせに回答する担当者です。以下の回答を、より自然で丁寧な日本語に整えてください。
+    let prompt = `あなたは駐車場の問い合わせに回答する担当者です。以下の回答を、より自然で丁寧な日本語に整えてください。
 複数の情報源からの情報が不自然につながっている場合は、自然な文の流れになるよう調整してください。
 ただし、情報の追加や削除は行わないでください。提供された情報のみを使用してください。
 
 【元の回答】
 ${originalResponse}`;
+
+    if (knowledgeIds && knowledgeIds.length > 0) {
+      prompt += `\n\n【参照された知識ベースID】: ${knowledgeIds.join(', ')}`;
+    }
 
     const message = await anthropic.messages.create({
       model: 'claude-3-5-sonnet-20241022',

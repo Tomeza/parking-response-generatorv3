@@ -1,96 +1,156 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pg_trgm, pgroonga]
 }
 
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model Knowledge {
-  id              Int             @id @default(autoincrement())
-  main_category   String?         @db.VarChar(50)
-  sub_category    String?         @db.VarChar(50)
-  detail_category String?         @db.VarChar(50)
-  question        String?
-  answer          String
-  is_template     Boolean         @default(false)
-  usage           String?         @db.VarChar(10)
-  note            String?
-  issue           String?
-  knowledge_tags  KnowledgeTag[]
-  feedback_weights FeedbackWeight[]
+  id                  Int                          @id @default(autoincrement())
+  main_category       String?                      @db.VarChar(50)
+  sub_category        String?                      @db.VarChar(50)
+  detail_category     String?                      @db.VarChar(50)
+  question            String?
+  answer              String
+  is_template         Boolean                      @default(false)
+  usage               String?                      @db.VarChar(10)
+  note                String?
+  issue               String?
+  createdAt           DateTime                     @default(now())
+  updatedAt           DateTime                     @updatedAt
+  search_vector       Unsupported("tsvector")?
+  feedback_weights    FeedbackWeight[]
+  question_variations KnowledgeQuestionVariation[]
+  knowledge_tags      KnowledgeTag[]
+  response_logs       ResponseLog[]
+
+  @@index([question, answer])
+  @@index([main_category, sub_category])
+  @@index([detail_category])
+  @@index([answer], map: "knowledge_pgroonga_answer_idx")
+  @@index([question], map: "knowledge_pgroonga_question_idx")
+  @@index([search_vector], map: "knowledge_search_vector_gin_idx", type: Gin)
+  @@index([detail_category], map: "knowledge_pgroonga_detail_category_idx")
+  @@index([main_category], map: "knowledge_pgroonga_main_category_idx")
+  @@index([sub_category], map: "knowledge_pgroonga_sub_category_idx")
 }
 
 model Tag {
-  id              Int             @id @default(autoincrement())
-  tag_name        String          @unique @db.VarChar(50)
-  description     String?
-  knowledge_tags  KnowledgeTag[]
-  tag_synonyms    TagSynonym[]
-  alert_words     AlertWord[]
+  id             Int            @id @default(autoincrement())
+  tag_name       String         @unique @db.VarChar(50)
+  description    String?
+  alert_words    AlertWord[]
+  knowledge_tags KnowledgeTag[]
+  tag_synonyms   TagSynonym[]
 }
 
 model KnowledgeTag {
-  knowledge_id    Int
-  tag_id          Int
-  knowledge       Knowledge       @relation(fields: [knowledge_id], references: [id])
-  tag             Tag             @relation(fields: [tag_id], references: [id])
+  knowledge_id Int
+  tag_id       Int
+  knowledge    Knowledge @relation(fields: [knowledge_id], references: [id])
+  tag          Tag       @relation(fields: [tag_id], references: [id])
 
   @@id([knowledge_id, tag_id])
 }
 
 model AlertWord {
-  id              Int             @id @default(autoincrement())
-  word            String          @unique @db.VarChar(50)
-  description     String?
-  related_tag_id  Int?
-  priority        Int             @default(5)
-  related_tag     Tag?            @relation(fields: [related_tag_id], references: [id])
+  id             Int     @id @default(autoincrement())
+  word           String  @unique @db.VarChar(50)
+  description    String?
+  related_tag_id Int?
+  priority       Int     @default(5)
+  related_tag    Tag?    @relation(fields: [related_tag_id], references: [id])
 }
 
 model ResponseLog {
-  id                Int             @id @default(autoincrement())
-  query             String
-  response          String
+  id                 Int        @id @default(autoincrement())
+  query              String
+  response           String
   used_knowledge_ids Int[]
-  missing_tags      String[]
-  missing_alerts    String[]
-  feedback          Boolean?
-  created_at        DateTime        @default(now())
+  missing_tags       String[]
+  missing_alerts     String[]
+  feedback           Boolean?
+  created_at         DateTime   @default(now())
+  knowledge_id       Int?
+  response_count     Int        @default(1)
+  knowledge          Knowledge? @relation(fields: [knowledge_id], references: [id])
 }
 
 model SeasonalInfo {
-  id              Int             @id @default(autoincrement())
-  info_type       String          @db.VarChar(50)
-  start_date      DateTime        @db.Date
-  end_date        DateTime        @db.Date
-  description     String?
-  created_at      DateTime        @default(now())
-  updated_at      DateTime        @default(now())
+  id          Int      @id @default(autoincrement())
+  info_type   String   @db.VarChar(50)
+  start_date  DateTime @db.Date
+  end_date    DateTime @db.Date
+  description String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
 }
 
 model FeedbackWeight {
-  query_pattern   String          @id @db.VarChar(100)
-  knowledge_id    Int
-  weight          Float           @default(1.0)
-  positive_count  Int             @default(0)
-  negative_count  Int             @default(0)
-  last_updated    DateTime        @default(now())
-  knowledge       Knowledge       @relation(fields: [knowledge_id], references: [id])
+  query_pattern  String    @db.VarChar(100)
+  knowledge_id   Int
+  weight         Float     @default(1.0)
+  positive_count Int       @default(0)
+  negative_count Int       @default(0)
+  last_updated   DateTime  @default(now())
+  knowledge      Knowledge @relation(fields: [knowledge_id], references: [id])
+
+  @@id([query_pattern, knowledge_id])
+  @@unique([query_pattern, knowledge_id])
 }
 
 model TagSynonym {
-  id              Int             @id @default(autoincrement())
-  tag_id          Int
-  synonym         String          @db.VarChar(50)
-  tag             Tag             @relation(fields: [tag_id], references: [id])
+  id      Int    @id @default(autoincrement())
+  tag_id  Int
+  synonym String @db.VarChar(50)
+  tag     Tag    @relation(fields: [tag_id], references: [id])
 
   @@unique([tag_id, synonym])
+}
+
+model SearchHistory {
+  id        Int      @id @default(autoincrement())
+  query     String
+  category  String?
+  tags      String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([query])
+  @@index([category])
+  @@index([tags])
+}
+
+model AdminUser {
+  id            Int      @id @default(autoincrement())
+  username      String   @unique
+  email         String?  @unique
+  password_hash String
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+}
+
+model SearchSynonym {
+  id         Int      @id @default(autoincrement())
+  word       String   @db.VarChar(50)
+  synonym    String   @db.VarChar(50)
+  created_at DateTime @default(now())
+
+  @@unique([word, synonym])
+}
+
+model KnowledgeQuestionVariation {
+  id           Int       @id @default(autoincrement())
+  knowledge_id Int
+  variation    String
+  created_at   DateTime  @default(now())
+  knowledge    Knowledge @relation(fields: [knowledge_id], references: [id])
+
+  @@index([variation])
+  @@index([knowledge_id])
 }
