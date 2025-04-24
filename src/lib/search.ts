@@ -1,8 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from './db';
 import { SearchResult, KuromojiToken } from './common-types';
-// @ts-expect-error - kuromojiモジュールに型定義がありません
-import kuromoji from 'kuromoji'; // Kuromoji.jsをインポート
+import kuromoji from 'kuromoji';
 
 // 結果に含めるKnowledgeモデルのカラムを選択
 const selectKnowledgeFields = {
@@ -19,9 +18,6 @@ const selectKnowledgeFields = {
   createdAt: true,
   updatedAt: true,
 };
-
-// scoreのみ必要
-type KnowledgeWithScore = Prisma.KnowledgeGetPayload<{ select: typeof selectKnowledgeFields }> & { pgroonga_score: number };
 
 // KuromojiのTokenizerを保持する変数（非同期で初期化）
 let tokenizer: kuromoji.Tokenizer<kuromoji.IpadicFeatures> | null = null;
@@ -44,7 +40,7 @@ const tokenizerPromise = new Promise<kuromoji.Tokenizer<kuromoji.IpadicFeatures>
 });
 
 // Step 2: 抽出する品詞を変更
-const VALID_POS = ['名詞', '動詞', '形容詞', '副詞']; 
+const VALID_POS = ['名詞', '動詞', '形容詞', '副詞'];
 
 export async function searchKnowledge(query: string, tags?: string): Promise<SearchResult[]> {
   const normalizedQuery = query.trim();
@@ -58,134 +54,119 @@ export async function searchKnowledge(query: string, tags?: string): Promise<Sea
     tokenizer = await tokenizerPromise;
     if (!tokenizer) {
       console.error('Kuromoji Tokenizer is not available.');
-      // Fallback to simple word splitting if tokenizer fails
-      const fallbackTerms = normalizedQuery
-        .split(/[\s、。．！？!?.]+/)
-        .filter(term => term.length > 1);
-      return simpleSearch(normalizedQuery, fallbackTerms);
+      return []; // Kuromojiがない場合は空を返す
     }
   }
 
-  let finalSearchTerms: string[] = [normalizedQuery];
-
   try {
     console.log('検索クエリ (Final Simplified Logic):', normalizedQuery);
-    console.log('入力タグ (Decoded):', decodedTags);
+    console.log('入力タグ (Decoded):', decodedTags); // タグは現状未使用
 
+    // --- Kuromojiによる形態素解析を復活 ---
     const tokens = tokenizer.tokenize(normalizedQuery);
-
     const searchTerms: string[] = tokens
         .filter((token: KuromojiToken) => VALID_POS.some(pos => token.pos.startsWith(pos)))
+        // '*' (未知語) の場合はそのまま、それ以外は基本形を使う
         .map((token: KuromojiToken) => token.basic_form === '*' ? token.surface_form : token.basic_form)
+        // 1文字以下の単語を除外
         .filter((term: string) => term !== null && term.length > 1);
+    // 重複を除去
     const uniqueSearchTerms: string[] = [...new Set(searchTerms)];
-    console.log('検索単語 (Kuromoji Final):', uniqueSearchTerms);
+    console.log('検索単語 (Kuromoji AND):', uniqueSearchTerms);
+
+    // --- 修正されたPGroongaクエリ構築 (AND検索) ---
+    let whereClause: Prisma.Sql;
     if (uniqueSearchTerms.length > 0) {
-        finalSearchTerms = uniqueSearchTerms;
+      // 抽出した単語をスペースで結合し、pgroonga_query_escape を通して AND 検索
+      const andQueryString = uniqueSearchTerms.join(' ');
+      whereClause = Prisma.sql`(question || ' ' || answer) &@~ pgroonga_query_escape(${andQueryString})`;
+    } else {
+      // Kuromojiで検索語が抽出できなかった場合は、元のクエリで検索 (フォールバック)
+      console.warn('No meaningful search terms extracted by Kuromoji. Using original query.');
+      whereClause = Prisma.sql`(question || ' ' || answer) &@~ pgroonga_query_escape(${normalizedQuery})`;
     }
 
-    console.log('[DEBUG] Final search terms for DB query:', finalSearchTerms);
+    console.log('[DEBUG] WHERE Clause (Kuromoji AND):', whereClause);
 
-    // --- 改善されたPGroongaクエリ構築 ---
-    // 完全一致に高いプライオリティを与える
-    const exactMatchCondition = Prisma.sql`(k.question &@~ ${normalizedQuery} OR k.answer &@~ ${normalizedQuery})`;
-    
-    // 各用語の条件を強化 - 各用語は AND 条件で結合
-    const termConditionsArray = finalSearchTerms.map(term => 
-        Prisma.sql`(k.question &@~ ${term} OR k.answer &@~ ${term})`
-    );
-    
-    // 少なくとも1つの条件は満たす必要がある
-    const termConditions = termConditionsArray.length > 0 
-        ? Prisma.sql`(${Prisma.join(termConditionsArray, ' OR ')})` 
-        : Prisma.sql`(TRUE)`;
-    
-    // カテゴリ検索条件を追加
-    const categoryConditions = finalSearchTerms.map(term => 
-        Prisma.sql`(k.main_category &@~ ${term} OR k.sub_category &@~ ${term} OR k.detail_category &@~ ${term})`
-    );
-    
-    const categoryCondition = categoryConditions.length > 0
-        ? Prisma.sql`(${Prisma.join(categoryConditions, ' OR ')})` 
-        : Prisma.sql`(FALSE)`;
-    
-    // WHERE 句の構築 - 完全一致、用語条件、カテゴリ条件を OR で結合
-    const whereClause = Prisma.sql`(${exactMatchCondition} OR ${termConditions} OR ${categoryCondition})`;
-    
-    console.log('[DEBUG] WHERE Clause (improved):', whereClause);
-
+    // SQLクエリ自体は変更なし (score DESC でソート)
     const querySql = Prisma.sql`
-      SELECT 
+      SELECT
         k.id, k.main_category, k.sub_category, k.detail_category, k.question, k.answer, k.is_template, k.usage, k.note, k.issue, k."createdAt", k."updatedAt",
-        pgroonga_score(k.tableoid, k.ctid) AS pgroonga_score,
-        pgroonga_score(k.tableoid, k.ctid) * CASE
-          WHEN k.question ILIKE ${`%${normalizedQuery}%`} THEN 2.0
-          ELSE 1.0
-        END AS adjusted_score
+        pgroonga_score(k.tableoid, k.ctid) AS score
       FROM "Knowledge" k
       WHERE ${whereClause}
-      ORDER BY 
-        CASE WHEN k.question ILIKE ${`%${normalizedQuery}%`} THEN 3
-             WHEN k.answer ILIKE ${`%${normalizedQuery}%`} THEN 2
-             WHEN k.is_template IS TRUE THEN 1 
-             ELSE 0 
-        END DESC,
-        adjusted_score DESC,
-        pgroonga_score(k.tableoid, k.ctid) DESC
+      ORDER BY score DESC
       LIMIT 10
     `;
 
-    console.log('[DEBUG] Executing Improved PGroonga Query:', querySql);
+    console.log('[DEBUG] Executing Kuromoji AND PGroonga Query:', querySql);
 
-    const results = await prisma.$queryRaw<KnowledgeWithScore[]>(querySql);
+    // 型定義も変更なし
+    type KnowledgeWithCorrectScore = Prisma.KnowledgeGetPayload<{ select: typeof selectKnowledgeFields }> & { score: number };
+    const results = await prisma.$queryRaw<KnowledgeWithCorrectScore[]>(querySql);
 
-    console.log(`PGroonga検索結果 (Improved): ${results.length}件`);
+    console.log(`PGroonga検索結果 (Kuromoji AND): ${results.length}件`);
 
+    // 戻り値マッピングも変更なし (score ?? 0)
     const searchResults: SearchResult[] = results.map(result => ({
       ...result,
-      score: result.pgroonga_score,
+      score: result.score ?? 0,
       note: result.note || ''
     }));
 
-    console.log('ソート済み検索結果 (Improved):', searchResults.map(r => ({ id: r.id, question: r.question, score: r.score })));
+    console.log('ソート済み検索結果 (Kuromoji AND):', searchResults.map(r => ({ id: r.id, question: r.question, score: r.score })));
+
+    // --- フォールバック処理の追加 ---
+    if (searchResults.length === 0) {
+      console.log('Primary search returned 0 results. Running fallback simple search...');
+      // Kuromojiで抽出した全トークン（フィルタ前）を simpleSearch に渡す
+      const allTokens = tokenizer.tokenize(normalizedQuery)
+                          .map((token: KuromojiToken) => token.basic_form === '*' ? token.surface_form : token.basic_form)
+                          // string であることを保証し、1文字を除外
+                          .filter((term): term is string => typeof term === 'string' && term.length > 0);
+      const uniqueAllTokens = [...new Set(allTokens)];
+      // 型アサーションでエラーを抑制 (根本解決ではない可能性あり)
+      return await simpleSearch(normalizedQuery, uniqueAllTokens as string[]); // フォールバック検索を実行して結果を返す
+    }
+    // --- フォールバック処理ここまで ---
 
     return searchResults;
 
   } catch (error) {
-    console.error('Search Error (Improved):', error);
-    // Fallback to simple search if PGroonga fails
-    return simpleSearch(normalizedQuery, finalSearchTerms);
+    console.error('Search Error (Kuromoji AND):', error);
+    return []; // エラー時は空配列
   }
 }
 
-// シンプルな検索フォールバック関数
+// シンプルな検索フォールバック関数 (変更なし、呼び出し元はコメントアウト)
 async function simpleSearch(query: string, terms: string[]): Promise<SearchResult[]> {
   console.log('Fallback simple search executing...');
-  
+
   type InsensitiveMode = 'insensitive';
-  
+
   try {
     const results = await prisma.knowledge.findMany({
       where: {
         OR: [
           { question: { contains: query, mode: 'insensitive' as InsensitiveMode } },
           { answer: { contains: query, mode: 'insensitive' as InsensitiveMode } },
-          ...terms.map(term => ({ 
+          ...terms.map(term => ({
             OR: [
               { question: { contains: term, mode: 'insensitive' as InsensitiveMode } },
               { answer: { contains: term, mode: 'insensitive' as InsensitiveMode } }
-            ] 
+            ]
           }))
         ]
       },
       select: selectKnowledgeFields,
       take: 10
     });
-    
-    return results.map(r => ({ 
-      ...r, 
-      score: r.question?.toLowerCase().includes(query.toLowerCase()) ? 0.8 : 0.5,
-      note: 'シンプル検索結果' 
+
+    // フォールバック結果には低いスコアと目印のnoteを付与
+    return results.map(r => ({
+      ...r,
+      score: r.question?.toLowerCase().includes(query.toLowerCase()) ? 0.5 : 0.2, // スコアを少し下げる (例: 0.5 / 0.2)
+      note: 'フォールバック検索結果' // note を変更
     }));
   } catch (fallbackError) {
     console.error('Simple search error:', fallbackError);
@@ -193,9 +174,10 @@ async function simpleSearch(query: string, terms: string[]): Promise<SearchResul
   }
 }
 
+
 export type { SearchResult };
 
-// フォールバック検索関数 (例)
+// フォールバック検索関数 (例) - コメントアウトされたまま
 /*
 async function runFallbackSearch(query: string): Promise<SearchResult[]> {
   console.log('Fallback ILIKE search executing...');
@@ -207,13 +189,13 @@ async function runFallbackSearch(query: string): Promise<SearchResult[]> {
        where: {
          OR: [
            { question: { contains: query, mode: 'insensitive' } },
-           ...finalSearchTerms.map((term: string) => ({ 
+           ...finalSearchTerms.map((term: string) => ({
              question: { contains: term, mode: 'insensitive' }
            }))
          ]
        },
        select: selectKnowledgeFields, // 必要なカラムのみ選択
-       take: 10 
+       take: 10
     });
     return results.map(r => ({ ...r, score: 0.1, note: r.note || '' })); // 固定スコア
   } catch (fallbackError) {

@@ -25,7 +25,7 @@ async function importKnowledgeData() {
     
     // CSVファイルを読み込む
     const projectRoot = path.resolve(__dirname, '..'); // プロジェクトルートを取得
-    const csvPath = path.join(projectRoot, 'src', 'data', 'csv', 'production', 'knowledge_solo_shuttle.csv'); // <- ファイル名を変更
+    const csvPath = path.join(projectRoot, 'src', 'data', 'csv', 'production', 'knowledge.csv'); // <- 元のパスに戻す
     const csvData = fs.readFileSync(csvPath, 'utf8');
     
     // CSVをパース

@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // ★★★ 修正: searchKnowledge をインポート ★★★
 // import { searchKnowledge, type SearchResult } from '@/lib/search'; 
 // ★★★ 修正: searchKnowledge と SearchResult を正しいパスからインポート ★★★
-import { searchKnowledge, getSearchMetrics, clearSearchCache } from '../../../lib/search'; 
+import { searchKnowledge } from '../../../lib/search';
 import { type SearchResult } from '../../../lib/common-types';
 import { prisma } from '../../../lib/db';
 // アラートシステムをインポート（相対パスに修正）
@@ -20,17 +20,20 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const query = searchParams.get('q') || '';
   const tags = searchParams.get('tags') || ''; // tags パラメータを取得
-  const resetCache = searchParams.get('reset_cache') === 'true'; // キャッシュリセットフラグ
+  // ★★★ 修正: reset_cache 関連の処理を削除 ★★★
+  // const resetCache = searchParams.get('reset_cache') === 'true';
 
-  // リクエストがキャッシュリセットを要求している場合
+  // ★★★ 修正: reset_cache 関連の処理を削除 ★★★
+  /*
   if (resetCache) {
-    clearSearchCache();
+    // clearSearchCache(); // 削除
     return NextResponse.json({ 
-      message: '検索キャッシュをクリアしました', 
+      message: '検索キャッシュをクリアしました (機能は削除されました)', 
       success: true,
       timestamp: new Date().toISOString()
     });
   }
+  */
 
   // クエリとタグをデコード (念のため)
   const decodedQuery = decodeURIComponent(query);
@@ -56,7 +59,7 @@ export async function GET(request: NextRequest) {
         // searchKnowledge に decodedTags を渡す
         const rawResults = await searchKnowledge(decodedQuery, decodedTags); 
         if (Array.isArray(rawResults)) {
-            // SearchResult型に合わせてフィルタリング
+            // SearchResult型に合わせてフィルタリング (念のため)
             searchResults = rawResults.filter(
                 (item): item is SearchResult => 
                     typeof item === 'object' && 
@@ -64,13 +67,8 @@ export async function GET(request: NextRequest) {
                     typeof item.id === 'number' && 
                     typeof item.answer === 'string'
             );
-            
-            // ★★★ 修正: 不要な再ソート処理を削除 ★★★
-            // searchResults.sort((a, b) => (b.score ?? 0) - (a.score ?? 0)); 
-            // ★★★ 修正: ログのタイトルを変更 (既にソート済みであることを示す) ★★★
             console.log('Search results from searchKnowledge (already sorted):', searchResults.map(r => ({ id: r.id, score: r.score })));
         } else {
-            // ★★★ 修正: searchKnowledge を使うようにログメッセージを更新 ★★★
             console.warn(`searchKnowledge for query "${decodedQuery}" with tags "${decodedTags}" did not return an array. Received:`, rawResults);
         }
     } catch(searchError) {
@@ -85,8 +83,8 @@ export async function GET(request: NextRequest) {
       const notFoundMessage = "申し訳ございませんが、ご質問に対する具体的な情報が見つかりませんでした。";
       const notFoundWithAlerts = addMandatoryAlerts(notFoundMessage);
       
-      // 検索メトリクスを取得
-      const metrics = getSearchMetrics();
+      // ★★★ 修正: getSearchMetrics 呼び出し削除 ★★★
+      // const metrics = getSearchMetrics();
       const searchTime = Date.now() - searchStartTime;
       
       const notFoundResponse = {
@@ -99,7 +97,8 @@ export async function GET(request: NextRequest) {
         ],
         performance: {
           total_time_ms: searchTime,
-          search_metrics: metrics
+          // ★★★ 修正: search_metrics 削除 ★★★
+          // search_metrics: metrics 
         }
       };
 
@@ -125,7 +124,7 @@ export async function GET(request: NextRequest) {
     // キーワード抽出ステップ
     const keywordStep = {
       step: "キーワード抽出/前処理",
-      content: { query: decodedQuery }
+      content: { query: decodedQuery } // 抽出キーワードはsearchKnowledge側に依存
     };
 
     // ナレッジ検索ステップ
@@ -140,7 +139,7 @@ export async function GET(request: NextRequest) {
           answer: result.answer, 
           score: result.score ?? 0
         })),
-        missing: []
+        missing: [] // Missing は現状判定しない
       }
     };
 
@@ -149,6 +148,7 @@ export async function GET(request: NextRequest) {
     let templateReason = "標準テンプレート適用";
     let finalResponseText = bestMatch.answer;
 
+    // 専用回答テンプレートの適用ロジック (変更なし)
     if (bestMatch.note === '外車利用に関する専用回答です') {
       finalResponseText = "お問い合わせありがとうございます。誠に申し訳ございませんが、当駐車場では場内保険の対象外となるため、全外車（BMW、ベンツ、アウディなどを含む）とレクサス全車種はお預かりできかねます。ご理解いただけますと幸いです。";
       template = finalResponseText;
@@ -181,7 +181,7 @@ export async function GET(request: NextRequest) {
       content: {
         original: originalResponse,
         withAlerts: finalResponseText,
-        alerts: ["国際線利用不可", "外車受入不可"]
+        alerts: ["国際線利用不可", "外車受入不可"] // 固定アラート
       }
     };
 
@@ -198,16 +198,16 @@ export async function GET(request: NextRequest) {
         query: decodedQuery,
         response: finalResponseText,
         used_knowledge_ids: usedKnowledgeIds,
-        missing_tags: [],
-        missing_alerts: [],
+        missing_tags: [], // 現状未使用
+        missing_alerts: [], // 現状未使用
         knowledge_id: bestMatch.id,
         response_count: searchResults.length,
         created_at: new Date()
       }
     });
 
-    // 検索メトリクスを取得
-    const metrics = getSearchMetrics();
+    // ★★★ 修正: getSearchMetrics 呼び出し削除 ★★★
+    // const metrics = getSearchMetrics();
     const searchTime = Date.now() - searchStartTime;
 
     return NextResponse.json({
@@ -226,7 +226,8 @@ export async function GET(request: NextRequest) {
       })),
       performance: {
         total_time_ms: searchTime,
-        search_metrics: metrics
+        // ★★★ 修正: search_metrics 削除 ★★★
+        // search_metrics: metrics
       }
     });
 
@@ -253,8 +254,8 @@ export async function GET(request: NextRequest) {
       console.error('Error saving error response log:', logError);
     }
 
-    // 検索メトリクスを取得
-    const metrics = getSearchMetrics();
+    // ★★★ 修正: getSearchMetrics 呼び出し削除 ★★★
+    // const metrics = getSearchMetrics();
     const searchTime = Date.now() - searchStartTime;
 
     return NextResponse.json(
@@ -267,7 +268,8 @@ export async function GET(request: NextRequest) {
         ],
         performance: {
           total_time_ms: searchTime,
-          search_metrics: metrics
+          // ★★★ 修正: search_metrics 削除 ★★★
+          // search_metrics: metrics
         }
       },
       { status: 500 }
