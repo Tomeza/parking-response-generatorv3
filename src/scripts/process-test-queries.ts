@@ -93,13 +93,13 @@ async function runTestQueries(testQueries: TestQuery[]): Promise<TestQuery[]> {
       // 結果を記録
       results.push({
         ...query,
-        results: searchResult ? searchResult.results.slice(0, 3) : []
+        results: searchResult ? searchResult.slice(0, 3) : []
       });
       
       // 結果のサマリを表示
-      if (searchResult && searchResult.results.length > 0) {
-        console.log(`  ✅ ${searchResult.results.length}件の結果が見つかりました`);
-        console.log(`  🔝 最上位の回答: ID=${searchResult.results[0].id}, カテゴリ=${searchResult.results[0].main_category}/${searchResult.results[0].sub_category}`);
+      if (searchResult && searchResult.length > 0) {
+        console.log(`  ✅ ${searchResult.length}件の結果が見つかりました`);
+        console.log(`  🔝 最上位の回答: ID=${searchResult[0].id}, カテゴリ=${searchResult[0].main_category}/${searchResult[0].sub_category}`);
       } else {
         console.log('  ❌ 結果が見つかりませんでした');
       }

@@ -1,12 +1,4 @@
-import { searchKnowledge } from '../src/lib/search';
-
-interface SearchResult {
-  results?: Array<any>;
-  keyTerms?: string[];
-  synonymExpanded?: string[];
-  dates?: Date[];
-  busyPeriods?: any[];
-}
+import { searchKnowledge, SearchResult as ActualSearchResult } from '../src/lib/search';
 
 async function testSearch() {
   try {
@@ -23,13 +15,14 @@ async function testSearch() {
       console.log(`クエリ: "${query}" の検索結果`);
       console.log('===================================');
       
-      const result = await searchKnowledge(query) as SearchResult;
-      console.log('検索結果数:', result?.results?.length);
-      console.log('検索結果:', JSON.stringify(result?.results?.slice(0, 2), null, 2));
-      console.log('キーワード:', result?.keyTerms);
-      console.log('同義語展開:', result?.synonymExpanded);
-      console.log('日付検出:', result?.dates?.map((d: Date) => d.toISOString() || ''));
-      console.log('繁忙期:', result?.busyPeriods || []);
+      const searchResults: ActualSearchResult[] = await searchKnowledge(query);
+
+      console.log('検索結果数:', searchResults.length);
+      console.log('検索結果 (上位2件の抜粋):', JSON.stringify(
+        searchResults.slice(0, 2).map(r => ({ id: r.id, question: r.question?.substring(0, 50) + '...', score: r.score })),
+        null,
+        2
+      ));
     }
   } catch (e) {
     console.error('エラー:', e);

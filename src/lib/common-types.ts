@@ -15,6 +15,12 @@ export type SearchResult = Knowledge & {
   question_sim?: number;
   answer_sim?: number;
   note?: string;
+  score_details?: {
+    q: number;  // 質問文検索スコア
+    a: number;  // 回答文検索スコア
+    v: number;  // ベクトル検索スコア
+    weighted: number; // 重み付けされた最終スコア
+  };
 };
 
 /**

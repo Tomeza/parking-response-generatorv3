@@ -6,7 +6,7 @@ generator client {
 datasource db {
   provider   = "postgresql"
   url        = env("DATABASE_URL")
-  extensions = [pg_trgm, pgroonga]
+  extensions = [pg_graphql, pg_stat_statements, pg_trgm, pgcrypto, pgjwt, pgroonga, uuid_ossp(map: "uuid-ossp", schema: "extensions"), vector]
 }
 
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
@@ -21,6 +21,7 @@ model Knowledge {
   usage               String?                      @db.VarChar(10)
   note                String?
   issue               String?
+  embedding_vector    Unsupported("vector")?
   createdAt           DateTime                     @default(now())
   updatedAt           DateTime                     @updatedAt
   search_vector       Unsupported("tsvector")?
