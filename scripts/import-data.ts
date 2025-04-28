@@ -33,7 +33,7 @@ async function importKnowledgeData(csvPath: string) {
     console.log(`データインポート開始: ${absoluteCsvPath}`);
 
     // --- 条件付き削除ロジック --- (コメントアウトを解除し、正式なロジックに)
-    if (path.basename(absoluteCsvPath).includes('knowledge.csv')) {
+    if (path.basename(absoluteCsvPath) === 'knowledge.csv') { // Check for exact match
       console.warn('警告: knowledge.csv が指定されたため、既存のKnowledgeおよびKnowledgeTagデータを削除します。');
       // 既存のデータを削除
       await prisma.knowledgeTag.deleteMany({}); // deleteMany を実行

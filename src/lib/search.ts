@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from './db';
-import { SearchResult, KuromojiToken } from './common-types';
-import kuromoji from 'kuromoji';
+import { SearchResult } from './common-types';
+import kuromoji, { IpadicFeatures } from 'kuromoji';
 import { searchSimilarKnowledge } from './embeddings';
 
 // 結果に含めるKnowledgeモデルのカラムを選択
@@ -21,11 +21,11 @@ const selectKnowledgeFields = {
 };
 
 // KuromojiのTokenizerを保持する変数（非同期で初期化）
-let tokenizer: kuromoji.Tokenizer<kuromoji.IpadicFeatures> | null = null;
+let tokenizer: kuromoji.Tokenizer<IpadicFeatures> | null = null;
 
 // PromiseでKuromojiの初期化をラップ
-const tokenizerPromise = new Promise<kuromoji.Tokenizer<kuromoji.IpadicFeatures> | null>((resolve, reject) => {
-  kuromoji.builder({ dicPath: 'node_modules/kuromoji/dict' }).build((err: Error | null, _tokenizer: kuromoji.Tokenizer<kuromoji.IpadicFeatures>) => {
+const tokenizerPromise = new Promise<kuromoji.Tokenizer<IpadicFeatures> | null>((resolve, reject) => {
+  kuromoji.builder({ dicPath: 'node_modules/kuromoji/dict' }).build((err: Error | null, _tokenizer: kuromoji.Tokenizer<IpadicFeatures>) => {
     if (err) {
       console.error('Kuromoji tokenizer build error:', err);
       reject(err);
@@ -103,17 +103,17 @@ export async function searchKnowledge(query: string, tags?: string): Promise<Sea
     console.log('検索クエリ (Final Simplified Logic):', normalizedQuery);
     console.log('入力タグ (Decoded):', decodedTags);
 
-    const tokens = tokenizer.tokenize(normalizedQuery);
+    const tokens: IpadicFeatures[] = tokenizer.tokenize(normalizedQuery);
     const searchTerms: string[] = tokens
-        .filter((token: KuromojiToken) => VALID_POS.some(pos => token.pos.startsWith(pos)))
-        .map((token: KuromojiToken) => token.basic_form === '*' ? token.surface_form : token.basic_form)
-        .filter((term: string) => term !== null && term.length > 1);
+        .filter((token: IpadicFeatures) => VALID_POS.some(pos => token.pos.startsWith(pos)))
+        .map((token: IpadicFeatures) => token.basic_form === '*' ? token.surface_form : token.basic_form)
+        .filter((term: string): term is string => term !== null && term.length > 1);
     const uniqueSearchTerms: string[] = [...new Set(searchTerms)];
     console.log('検索単語 (Kuromoji OR - Array):', uniqueSearchTerms);
 
     // フォールバック用に allTokens を計算しておく
     allTokens = tokenizer.tokenize(normalizedQuery)
-                        .map((token: KuromojiToken) => token.basic_form === '*' ? token.surface_form : token.basic_form)
+                        .map((token: IpadicFeatures) => token.basic_form === '*' ? token.surface_form : token.basic_form)
                         .filter((term): term is string => typeof term === 'string' && term.length > 0);
     allTokens = [...new Set(allTokens)];
 
