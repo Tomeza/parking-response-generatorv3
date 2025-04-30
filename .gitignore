@@ -46,3 +46,12 @@ next-env.d.ts
 # Compiled JavaScript (if source is TypeScript)
 # Adjust path if needed, e.g., src/scripts/*.js
 simple-search-test.js
+
+# Backup files
+*.dump
+
+# Test results
+data/test-results.*
+
+# Build output
+dist/
