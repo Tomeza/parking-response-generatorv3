@@ -1,14 +1,14 @@
--- CreateExtension
-CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "extensions";
+
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
 
 -- CreateExtension
-CREATE EXTENSION IF NOT EXISTS "pgroonga";
-
--- CreateExtension
-CREATE EXTENSION IF NOT EXISTS "vector";
+CREATE EXTENSION IF NOT EXISTS vector;
 
 -- CreateTable
-CREATE TABLE "Knowledge" (
+CREATE TABLE "public"."Knowledge" (
     "id" SERIAL NOT NULL,
     "main_category" VARCHAR(50),
     "sub_category" VARCHAR(50),
@@ -19,16 +19,15 @@ CREATE TABLE "Knowledge" (
     "usage" VARCHAR(10),
     "note" TEXT,
     "issue" TEXT,
-    "embedding_vector" vector(1536),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "search_vector" tsvector,
+    "embedding_vector" vector,
 
     CONSTRAINT "Knowledge_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "Tag" (
+CREATE TABLE "public"."Tag" (
     "id" SERIAL NOT NULL,
     "tag_name" VARCHAR(50) NOT NULL,
     "description" TEXT,
@@ -37,7 +36,7 @@ CREATE TABLE "Tag" (
 );
 
 -- CreateTable
-CREATE TABLE "KnowledgeTag" (
+CREATE TABLE "public"."KnowledgeTag" (
     "knowledge_id" INTEGER NOT NULL,
     "tag_id" INTEGER NOT NULL,
 
@@ -45,7 +44,7 @@ CREATE TABLE "KnowledgeTag" (
 );
 
 -- CreateTable
-CREATE TABLE "AlertWord" (
+CREATE TABLE "public"."AlertWord" (
     "id" SERIAL NOT NULL,
     "word" VARCHAR(50) NOT NULL,
     "description" TEXT,
@@ -56,7 +55,7 @@ CREATE TABLE "AlertWord" (
 );
 
 -- CreateTable
-CREATE TABLE "ResponseLog" (
+CREATE TABLE "public"."ResponseLog" (
     "id" SERIAL NOT NULL,
     "query" TEXT NOT NULL,
     "response" TEXT NOT NULL,
@@ -72,7 +71,7 @@ CREATE TABLE "ResponseLog" (
 );
 
 -- CreateTable
-CREATE TABLE "SeasonalInfo" (
+CREATE TABLE "public"."SeasonalInfo" (
     "id" SERIAL NOT NULL,
     "info_type" VARCHAR(50) NOT NULL,
     "start_date" DATE NOT NULL,
@@ -85,7 +84,7 @@ CREATE TABLE "SeasonalInfo" (
 );
 
 -- CreateTable
-CREATE TABLE "FeedbackWeight" (
+CREATE TABLE "public"."FeedbackWeight" (
     "query_pattern" VARCHAR(100) NOT NULL,
     "knowledge_id" INTEGER NOT NULL,
     "weight" DOUBLE PRECISION NOT NULL DEFAULT 1.0,
@@ -97,7 +96,7 @@ CREATE TABLE "FeedbackWeight" (
 );
 
 -- CreateTable
-CREATE TABLE "TagSynonym" (
+CREATE TABLE "public"."TagSynonym" (
     "id" SERIAL NOT NULL,
     "tag_id" INTEGER NOT NULL,
     "synonym" VARCHAR(50) NOT NULL,
@@ -106,7 +105,7 @@ CREATE TABLE "TagSynonym" (
 );
 
 -- CreateTable
-CREATE TABLE "SearchHistory" (
+CREATE TABLE "public"."SearchHistory" (
     "id" SERIAL NOT NULL,
     "query" TEXT NOT NULL,
     "category" TEXT,
@@ -118,7 +117,7 @@ CREATE TABLE "SearchHistory" (
 );
 
 -- CreateTable
-CREATE TABLE "AdminUser" (
+CREATE TABLE "public"."AdminUser" (
     "id" SERIAL NOT NULL,
     "username" TEXT NOT NULL,
     "email" TEXT,
@@ -130,7 +129,7 @@ CREATE TABLE "AdminUser" (
 );
 
 -- CreateTable
-CREATE TABLE "SearchSynonym" (
+CREATE TABLE "public"."SearchSynonym" (
     "id" SERIAL NOT NULL,
     "word" VARCHAR(50) NOT NULL,
     "synonym" VARCHAR(50) NOT NULL,
@@ -140,7 +139,7 @@ CREATE TABLE "SearchSynonym" (
 );
 
 -- CreateTable
-CREATE TABLE "KnowledgeQuestionVariation" (
+CREATE TABLE "public"."KnowledgeQuestionVariation" (
     "id" SERIAL NOT NULL,
     "knowledge_id" INTEGER NOT NULL,
     "variation" TEXT NOT NULL,
@@ -150,89 +149,80 @@ CREATE TABLE "KnowledgeQuestionVariation" (
 );
 
 -- CreateIndex
-CREATE INDEX "Knowledge_question_answer_idx" ON "Knowledge"("question", "answer");
+CREATE INDEX "Knowledge_question_answer_idx" ON "public"."Knowledge"("question", "answer");
 
 -- CreateIndex
-CREATE INDEX "Knowledge_main_category_sub_category_idx" ON "Knowledge"("main_category", "sub_category");
+CREATE INDEX "Knowledge_main_category_sub_category_idx" ON "public"."Knowledge"("main_category", "sub_category");
 
 -- CreateIndex
-CREATE INDEX "Knowledge_detail_category_idx" ON "Knowledge"("detail_category");
+CREATE INDEX "Knowledge_detail_category_idx" ON "public"."Knowledge"("detail_category");
 
 -- CreateIndex
-CREATE INDEX "knowledge_pgroonga_answer_idx" ON "Knowledge"("answer");
+CREATE INDEX "knowledge_pgroonga_answer_idx" ON "public"."Knowledge"("answer");
 
 -- CreateIndex
-CREATE INDEX "knowledge_pgroonga_question_idx" ON "Knowledge"("question");
+CREATE INDEX "knowledge_pgroonga_question_idx" ON "public"."Knowledge"("question");
 
 -- CreateIndex
-CREATE INDEX "knowledge_search_vector_gin_idx" ON "Knowledge" USING GIN ("search_vector");
+CREATE INDEX "knowledge_pgroonga_main_category_idx" ON "public"."Knowledge"("main_category");
 
 -- CreateIndex
-CREATE INDEX "knowledge_pgroonga_detail_category_idx" ON "Knowledge"("detail_category");
+CREATE INDEX "knowledge_pgroonga_sub_category_idx" ON "public"."Knowledge"("sub_category");
 
 -- CreateIndex
-CREATE INDEX "knowledge_pgroonga_main_category_idx" ON "Knowledge"("main_category");
+CREATE UNIQUE INDEX "Tag_tag_name_key" ON "public"."Tag"("tag_name");
 
 -- CreateIndex
-CREATE INDEX "knowledge_pgroonga_sub_category_idx" ON "Knowledge"("sub_category");
+CREATE UNIQUE INDEX "AlertWord_word_key" ON "public"."AlertWord"("word");
 
 -- CreateIndex
-CREATE INDEX "knowledge_embedding_vector_idx" ON "Knowledge"("embedding_vector");
+CREATE UNIQUE INDEX "FeedbackWeight_query_pattern_knowledge_id_key" ON "public"."FeedbackWeight"("query_pattern", "knowledge_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Tag_tag_name_key" ON "Tag"("tag_name");
+CREATE UNIQUE INDEX "TagSynonym_tag_id_synonym_key" ON "public"."TagSynonym"("tag_id", "synonym");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AlertWord_word_key" ON "AlertWord"("word");
+CREATE INDEX "SearchHistory_query_idx" ON "public"."SearchHistory"("query");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "FeedbackWeight_query_pattern_knowledge_id_key" ON "FeedbackWeight"("query_pattern", "knowledge_id");
+CREATE INDEX "SearchHistory_category_idx" ON "public"."SearchHistory"("category");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "TagSynonym_tag_id_synonym_key" ON "TagSynonym"("tag_id", "synonym");
+CREATE INDEX "SearchHistory_tags_idx" ON "public"."SearchHistory"("tags");
 
 -- CreateIndex
-CREATE INDEX "SearchHistory_query_idx" ON "SearchHistory"("query");
+CREATE UNIQUE INDEX "AdminUser_username_key" ON "public"."AdminUser"("username");
 
 -- CreateIndex
-CREATE INDEX "SearchHistory_category_idx" ON "SearchHistory"("category");
+CREATE UNIQUE INDEX "AdminUser_email_key" ON "public"."AdminUser"("email");
 
 -- CreateIndex
-CREATE INDEX "SearchHistory_tags_idx" ON "SearchHistory"("tags");
+CREATE UNIQUE INDEX "SearchSynonym_word_synonym_key" ON "public"."SearchSynonym"("word", "synonym");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AdminUser_username_key" ON "AdminUser"("username");
+CREATE INDEX "KnowledgeQuestionVariation_variation_idx" ON "public"."KnowledgeQuestionVariation"("variation");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AdminUser_email_key" ON "AdminUser"("email");
-
--- CreateIndex
-CREATE UNIQUE INDEX "SearchSynonym_word_synonym_key" ON "SearchSynonym"("word", "synonym");
-
--- CreateIndex
-CREATE INDEX "KnowledgeQuestionVariation_variation_idx" ON "KnowledgeQuestionVariation"("variation");
-
--- CreateIndex
-CREATE INDEX "KnowledgeQuestionVariation_knowledge_id_idx" ON "KnowledgeQuestionVariation"("knowledge_id");
+CREATE INDEX "KnowledgeQuestionVariation_knowledge_id_idx" ON "public"."KnowledgeQuestionVariation"("knowledge_id");
 
 -- AddForeignKey
-ALTER TABLE "KnowledgeTag" ADD CONSTRAINT "KnowledgeTag_knowledge_id_fkey" FOREIGN KEY ("knowledge_id") REFERENCES "Knowledge"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."KnowledgeTag" ADD CONSTRAINT "KnowledgeTag_knowledge_id_fkey" FOREIGN KEY ("knowledge_id") REFERENCES "public"."Knowledge"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "KnowledgeTag" ADD CONSTRAINT "KnowledgeTag_tag_id_fkey" FOREIGN KEY ("tag_id") REFERENCES "Tag"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."KnowledgeTag" ADD CONSTRAINT "KnowledgeTag_tag_id_fkey" FOREIGN KEY ("tag_id") REFERENCES "public"."Tag"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "AlertWord" ADD CONSTRAINT "AlertWord_related_tag_id_fkey" FOREIGN KEY ("related_tag_id") REFERENCES "Tag"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "public"."AlertWord" ADD CONSTRAINT "AlertWord_related_tag_id_fkey" FOREIGN KEY ("related_tag_id") REFERENCES "public"."Tag"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ResponseLog" ADD CONSTRAINT "ResponseLog_knowledge_id_fkey" FOREIGN KEY ("knowledge_id") REFERENCES "Knowledge"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "public"."ResponseLog" ADD CONSTRAINT "ResponseLog_knowledge_id_fkey" FOREIGN KEY ("knowledge_id") REFERENCES "public"."Knowledge"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "FeedbackWeight" ADD CONSTRAINT "FeedbackWeight_knowledge_id_fkey" FOREIGN KEY ("knowledge_id") REFERENCES "Knowledge"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."FeedbackWeight" ADD CONSTRAINT "FeedbackWeight_knowledge_id_fkey" FOREIGN KEY ("knowledge_id") REFERENCES "public"."Knowledge"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "TagSynonym" ADD CONSTRAINT "TagSynonym_tag_id_fkey" FOREIGN KEY ("tag_id") REFERENCES "Tag"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."TagSynonym" ADD CONSTRAINT "TagSynonym_tag_id_fkey" FOREIGN KEY ("tag_id") REFERENCES "public"."Tag"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "KnowledgeQuestionVariation" ADD CONSTRAINT "KnowledgeQuestionVariation_knowledge_id_fkey" FOREIGN KEY ("knowledge_id") REFERENCES "Knowledge"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."KnowledgeQuestionVariation" ADD CONSTRAINT "KnowledgeQuestionVariation_knowledge_id_fkey" FOREIGN KEY ("knowledge_id") REFERENCES "public"."Knowledge"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 

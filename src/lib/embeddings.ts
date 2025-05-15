@@ -116,15 +116,24 @@ export async function generateAllKnowledgeEmbeddings(): Promise<number> {
  * @returns 関連度スコア付きの知識エントリ配列
  */
 export async function searchSimilarKnowledge(query: string, limit: number = 10): Promise<Array<{ id: number; similarity: number }>> {
+  console.time('SSK_Total');
   try {
     if (!query || query.trim() === '') {
+      console.timeEnd('SSK_Total');
       return [];
     }
     
-    // クエリの埋め込みベクトルを生成
+    console.time('SSK_generateEmbedding');
     const queryEmbedding = await generateEmbedding(query);
+    console.timeEnd('SSK_generateEmbedding');
     
-    // コサイン類似度に基づいて類似した知識エントリを検索
+    if (!queryEmbedding || queryEmbedding.length === 0) {
+        console.warn('Failed to generate query embedding or got empty embedding.');
+        console.timeEnd('SSK_Total');
+        return [];
+    }
+
+    console.time('SSK_prismaQueryRaw');
     const results = await prisma.$queryRaw<Array<{ id: number; similarity: number }>>`
       SELECT id, 1 - (embedding_vector <=> ${queryEmbedding}::vector) as similarity
       FROM "Knowledge"
@@ -132,10 +141,12 @@ export async function searchSimilarKnowledge(query: string, limit: number = 10):
       ORDER BY similarity DESC
       LIMIT ${limit}
     `;
-    
+    console.timeEnd('SSK_prismaQueryRaw');
+    console.timeEnd('SSK_Total');
     return results;
   } catch (error) {
     console.error('Error in searchSimilarKnowledge:', error);
+    console.timeEnd('SSK_Total');
     return [];
   }
 } 

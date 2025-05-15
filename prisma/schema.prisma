@@ -1,12 +1,12 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["postgresqlExtensions"]
+  previewFeatures = ["multiSchema"]
 }
 
 datasource db {
-  provider   = "postgresql"
-  url        = env("DATABASE_URL")
-  extensions = [pg_graphql, pg_stat_statements, pg_trgm, pgcrypto, pgjwt, pgroonga, uuid_ossp(map: "uuid-ossp", schema: "extensions"), vector]
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["extensions", "public"]
 }
 
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
@@ -21,10 +21,9 @@ model Knowledge {
   usage               String?                      @db.VarChar(10)
   note                String?
   issue               String?
-  embedding_vector    Unsupported("vector")?
   createdAt           DateTime                     @default(now())
   updatedAt           DateTime                     @updatedAt
-  search_vector       Unsupported("tsvector")?
+  embedding_vector    Unsupported("vector(1536)")?
   feedback_weights    FeedbackWeight[]
   question_variations KnowledgeQuestionVariation[]
   knowledge_tags      KnowledgeTag[]
@@ -35,10 +34,9 @@ model Knowledge {
   @@index([detail_category])
   @@index([answer], map: "knowledge_pgroonga_answer_idx")
   @@index([question], map: "knowledge_pgroonga_question_idx")
-  @@index([search_vector], map: "knowledge_search_vector_gin_idx", type: Gin)
-  @@index([detail_category], map: "knowledge_pgroonga_detail_category_idx")
   @@index([main_category], map: "knowledge_pgroonga_main_category_idx")
   @@index([sub_category], map: "knowledge_pgroonga_sub_category_idx")
+  @@schema("public")
 }
 
 model Tag {
@@ -48,6 +46,8 @@ model Tag {
   alert_words    AlertWord[]
   knowledge_tags KnowledgeTag[]
   tag_synonyms   TagSynonym[]
+
+  @@schema("public")
 }
 
 model KnowledgeTag {
@@ -57,6 +57,7 @@ model KnowledgeTag {
   tag          Tag       @relation(fields: [tag_id], references: [id])
 
   @@id([knowledge_id, tag_id])
+  @@schema("public")
 }
 
 model AlertWord {
@@ -66,6 +67,8 @@ model AlertWord {
   related_tag_id Int?
   priority       Int     @default(5)
   related_tag    Tag?    @relation(fields: [related_tag_id], references: [id])
+
+  @@schema("public")
 }
 
 model ResponseLog {
@@ -80,6 +83,8 @@ model ResponseLog {
   knowledge_id       Int?
   response_count     Int        @default(1)
   knowledge          Knowledge? @relation(fields: [knowledge_id], references: [id])
+
+  @@schema("public")
 }
 
 model SeasonalInfo {
@@ -90,6 +95,8 @@ model SeasonalInfo {
   description String?
   created_at  DateTime @default(now())
   updated_at  DateTime @default(now())
+
+  @@schema("public")
 }
 
 model FeedbackWeight {
@@ -103,6 +110,7 @@ model FeedbackWeight {
 
   @@id([query_pattern, knowledge_id])
   @@unique([query_pattern, knowledge_id])
+  @@schema("public")
 }
 
 model TagSynonym {
@@ -112,6 +120,7 @@ model TagSynonym {
   tag     Tag    @relation(fields: [tag_id], references: [id])
 
   @@unique([tag_id, synonym])
+  @@schema("public")
 }
 
 model SearchHistory {
@@ -125,6 +134,7 @@ model SearchHistory {
   @@index([query])
   @@index([category])
   @@index([tags])
+  @@schema("public")
 }
 
 model AdminUser {
@@ -133,7 +143,9 @@ model AdminUser {
   email         String?  @unique
   password_hash String
   created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
+  updated_at    DateTime
+
+  @@schema("public")
 }
 
 model SearchSynonym {
@@ -143,6 +155,7 @@ model SearchSynonym {
   created_at DateTime @default(now())
 
   @@unique([word, synonym])
+  @@schema("public")
 }
 
 model KnowledgeQuestionVariation {
@@ -154,4 +167,5 @@ model KnowledgeQuestionVariation {
 
   @@index([variation])
   @@index([knowledge_id])
+  @@schema("public")
 }
