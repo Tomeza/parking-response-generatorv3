@@ -1,216 +1,205 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/db';
-import { detectDates, detectAlertWords, tokenizeJapanese } from '@/lib/utils';
+import { searchKnowledge } from '../../../lib/search';
+import { type SearchResult } from '../../../lib/common-types';
+import { prisma } from '../../../lib/db';
+import { addMandatoryAlerts, detectAlertKeywords } from '../../../lib/alert-system';
+import { refineResponse, analyzeQuery, rerankResults } from '@/lib/anthropic';
+
+// Helper function for timing
+async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
+  console.time(label);
+  const res = await fn();
+  console.timeEnd(label);
+  return res;
+}
 
 export async function GET(request: NextRequest) {
+  const searchStartTime = Date.now();
+  const searchParams = request.nextUrl.searchParams;
+  const query = searchParams.get('q') || '';
+  const tags = searchParams.get('tags') || '';
+
+  const decodedQuery = decodeURIComponent(query);
+  const decodedTags = decodeURIComponent(tags);
+
+  if (!decodedQuery) {
+    return NextResponse.json(
+      { error: '検索クエリが指定されていません' },
+      { status: 400 }
+    );
+  }
+
   try {
-    // クエリパラメータを取得
-    const searchParams = request.nextUrl.searchParams;
-    const query = searchParams.get('q');
+    console.log('Query received:', decodedQuery);
+    console.log('Tags received:', decodedTags);
+
+    // 1. Analyze Query
+    const analysisResult: any = await timed('A1_Step1_AnalyzeQuery', async () => {
+      return analyzeQuery(decodedQuery);
+    });
+    console.log('AnalyzeQuery Result (first 100 chars):', typeof analysisResult === 'string' ? analysisResult.substring(0,100) : analysisResult);
+
+    const detectedAlerts = detectAlertKeywords(decodedQuery);
+    console.log('Detected alerts:', detectedAlerts);
+    
+    // 2. Search Knowledge
+    let searchResults: SearchResult[] = [];
+    try {
+      const rawResults = await timed('A1_Step2_SearchKnowledge', async () => {
+        return searchKnowledge(decodedQuery, decodedTags);
+      });
+      if (Array.isArray(rawResults)) {
+        searchResults = rawResults.filter(
+            (item): item is SearchResult => 
+                typeof item === 'object' && 
+                item !== null && 
+                typeof item.id === 'number' && 
+                typeof item.answer === 'string'
+        );
+        console.log('Search results from searchKnowledge (already sorted):', searchResults.map(r => ({ id: r.id, score: r.score })));
+      } else {
+        console.warn(`searchKnowledge for query "${decodedQuery}" with tags "${decodedTags}" did not return an array. Received:`, rawResults);
+      }
+    } catch(searchError) {
+      console.error(`Error during searchKnowledge for query "${decodedQuery}" with tags "${decodedTags}":`, searchError);
+    }
+
+    console.log('Search results count:', searchResults.length);
+    
+    if (searchResults.length === 0) {
+      const notFoundMessage = "申し訳ございませんが、ご質問に対する具体的な情報が見つかりませんでした。";
+      const notFoundWithAlerts = addMandatoryAlerts(notFoundMessage);
+      const searchTime = Date.now() - searchStartTime;
+      const notFoundResponse = {
+        response: notFoundWithAlerts,
+        steps: [
+          { step: "キーワード抽出", content: { query: decodedQuery, terms: "-", analysis: analysisResult } },
+          { step: "ナレッジ検索", content: { status: "失敗", reason: "関連情報なし", used: [] } },
+          { step: "応答生成", content: { result: "フォールバック応答", template: "N/A", reason: "情報なし" } },
+          { step: "アラート追加", content: { alerts: ["国際線利用不可", "外車受入不可"] } }
+        ],
+        performance: { total_time_ms: searchTime }
+      };
+      await prisma.responseLog.create({
+        data: { query: decodedQuery, response: notFoundWithAlerts, used_knowledge_ids: [], missing_tags: [], missing_alerts: [], created_at: new Date() }
+      });
+      return NextResponse.json(notFoundResponse);
+    }
+    
+    // 3. Rerank Results (if more than one result)
+    let rerankedTopResults: SearchResult[] = searchResults;
+    if (searchResults.length > 1) {
+      rerankedTopResults = await timed('A1_Step3_RerankResults', async () => {
+        return rerankResults(decodedQuery, searchResults.slice(0, 3)); 
+      });
+      console.log('Reranked result ID:', rerankedTopResults.length > 0 ? rerankedTopResults[0].id : 'N/A');
+    } else {
+      console.log('Skipping rerank, only one or zero search results.');
+    }
+
+    const bestMatch = rerankedTopResults.length > 0 ? rerankedTopResults[0] : searchResults[0];
+    const allOriginalResults = searchResults;
+    const usedKnowledgeIds = allOriginalResults.map((result: SearchResult) => result.id);
+
+    const keywordStep = { step: "キーワード抽出/前処理", content: { query: decodedQuery, analysis: analysisResult } };
+    const knowledgeSearchStep = {
+      step: "ナレッジ検索",
+      content: {
+        score: bestMatch.score ?? 0,
+        bestMatch: { id: bestMatch.id, question: bestMatch.question },
+        used: allOriginalResults.map((result: SearchResult) => ({ id: result.id, question: result.question, answer: result.answer, score: result.score ?? 0 })),
+        missing: []
+      }
+    };
+
+    let template = "[ANSWER]";
+    let templateReason = "標準テンプレート適用";
+    let responseTextForRefinement = bestMatch.answer;
+
+    if (bestMatch.note === '外車利用に関する専用回答です') {
+      responseTextForRefinement = "お問い合わせありがとうございます。誠に申し訳ございませんが、当駐車場では場内保険の対象外となるため、全外車（BMW、ベンツ、アウディなどを含む）とレクサス全車種はお預かりできかねます。ご理解いただけますと幸いです。";
+      template = responseTextForRefinement;
+      templateReason = "外車利用不可の専用回答を適用";
+    } else if (bestMatch.note === '国際線利用に関する専用回答です') {
+      responseTextForRefinement = "申し訳ございませんが、当駐車場は国内線ご利用のお客様専用となっております。国際線ターミナルへの送迎も含め、ご利用いただけません。";
+      template = responseTextForRefinement;
+      templateReason = "国際線利用不可の専用回答を適用";
+    }
+    
+    // 4. Refine Response
+    let refinedAnswer: string;
+
+    // --- refineResponse の呼び出しを完全にスキップし、responseTextForRefinement をそのまま使用する --- 
+    refinedAnswer = responseTextForRefinement;
+    console.log('Force skipping RefineResponse. Using responseTextForRefinement directly for id:', bestMatch.id);
+    // --- ここまで --- 
+
+    const templateStep = { step: "テンプレート適用", content: { template: template, reason: templateReason, original_answer: responseTextForRefinement, refined_answer: refinedAnswer } };
+    
+    const finalResponseTextWithAlerts = addMandatoryAlerts(refinedAnswer);
+    const alertStep = { step: "アラート追加", content: { original: refinedAnswer, withAlerts: finalResponseTextWithAlerts, alerts: ["国際線利用不可", "外車受入不可"] } };
+
+    const responseSteps = [ keywordStep, knowledgeSearchStep, templateStep, alertStep ];
+    
+    await prisma.responseLog.create({
+      data: {
+        query: decodedQuery,
+        response: finalResponseTextWithAlerts,
+        used_knowledge_ids: usedKnowledgeIds,
+        missing_tags: [], missing_alerts: [],
+        knowledge_id: bestMatch.id,
+        response_count: allOriginalResults.length,
+        created_at: new Date()
+      }
+    });
+
+    const searchTime = Date.now() - searchStartTime;
+    return NextResponse.json({
+      response: finalResponseTextWithAlerts,
+      responseId: bestMatch.id,
+      score: bestMatch.score ?? 0,
+      knowledge_id: bestMatch.id,
+      question: bestMatch.question,
+      steps: responseSteps,
+      total_results: allOriginalResults.length,
+      all_results: allOriginalResults.map(r => ({ id: r.id, score: r.score, note: r.note, detail_category: r.detail_category })),
+      performance: { total_time_ms: searchTime }
+    });
+
+  } catch (error: any) {
+    console.error('Error processing query in GET:', error);
+    const errorMessage = addMandatoryAlerts("検索処理中にエラーが発生しました (GET)");
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const { query } = await req.json();
 
     if (!query) {
       return NextResponse.json(
-        { error: '問い合わせテキストが必要です' },
+        { error: 'クエリが指定されていません' },
         { status: 400 }
       );
     }
 
-    // ステップ1: アラートワード検出
-    const alertWords = await prisma.alertWord.findMany({
-      orderBy: { priority: 'asc' },
-      include: { related_tag: true },
-    });
-
-    const detectedAlerts = detectAlertWords(query, alertWords);
-    const detectedAlertWords = detectedAlerts.map(alert => alert.word);
-    const missingAlerts = alertWords
-      .filter(alert => !detectedAlertWords.includes(alert.word))
-      .slice(0, 5); // 上位5件のみ
-
-    // 日付検出
-    const dates = detectDates(query);
-    const seasonalInfo = [];
-
-    // 検出された日付が繁忙期かどうかチェック
-    if (dates.length > 0) {
-      for (const date of dates) {
-        const busyPeriod = await prisma.seasonalInfo.findFirst({
-          where: {
-            start_date: { lte: date },
-            end_date: { gte: date },
-          },
-        });
-
-        if (busyPeriod) {
-          seasonalInfo.push({
-            date: date.toISOString().split('T')[0],
-            type: busyPeriod.info_type,
-            description: busyPeriod.description,
-          });
-        }
-      }
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/query?q=${encodeURIComponent(query)}`);
+    if (!res.ok) {
+      console.error('Fetch to GET endpoint failed:', res.status, await res.text());
+      throw new Error(`API call to GET /api/query failed with status ${res.status}`);
     }
-
-    // ステップ2: ナレッジ検索
-    // 簡易的な形態素解析
-    const tokens = tokenizeJapanese(query);
+    const data = await res.json();
     
-    // 関連するナレッジを検索
-    const knowledgeEntries = await prisma.knowledge.findMany({
-      where: {
-        OR: [
-          { question: { contains: query } },
-          { answer: { contains: query } },
-          ...tokens.map(token => ({
-            OR: [
-              { question: { contains: token } },
-              { answer: { contains: token } },
-              { main_category: { contains: token } },
-              { sub_category: { contains: token } },
-              { detail_category: { contains: token } },
-            ],
-          })),
-        ],
-      },
-      include: {
-        knowledge_tags: {
-          include: {
-            tag: true,
-          },
-        },
-      },
-      take: 5, // 上位5件のみ
-    });
+    return NextResponse.json(data);
 
-    // 使用するナレッジと使用しないナレッジを分類
-    const usedKnowledge = knowledgeEntries.filter(k => k.usage !== '✖️');
-    const unusedKnowledge = knowledgeEntries.filter(k => k.usage === '✖️');
-
-    // 不足しているタグを特定
-    const allTags = await prisma.tag.findMany();
-    const usedTags = new Set(
-      usedKnowledge.flatMap(k => k.knowledge_tags.map(kt => kt.tag.tag_name))
-    );
-    const missingTags = allTags
-      .filter(tag => !usedTags.has(tag.tag_name))
-      .slice(0, 5); // 上位5件のみ
-
-    // ステップ3: トレースと改善提案
-    const suggestions = [];
-
-    if (missingTags.length > 0) {
-      suggestions.push(`タグの追加: ${missingTags.map(t => t.tag_name).join(', ')}`);
-    }
-
-    if (missingAlerts.length > 0) {
-      suggestions.push(`アラートワードの追加: ${missingAlerts.map(a => a.word).join(', ')}`);
-    }
-
-    // ステップ4: テンプレート適用
-    let template = null;
-    let templateReason = '';
-
-    // テンプレートの選択ロジック
-    const templates = await prisma.knowledge.findMany({
-      where: { is_template: true },
-    });
-
-    if (detectedAlerts.length > 0 && templates.length > 0) {
-      // 優先度の高いアラートに基づいてテンプレートを選択
-      const highestPriorityAlert = detectedAlerts[0];
-      template = templates.find(t => 
-        t.main_category?.includes(highestPriorityAlert.word) || 
-        t.sub_category?.includes(highestPriorityAlert.word)
-      );
-      
-      if (template) {
-        templateReason = `${highestPriorityAlert.word}アラート検出`;
-      }
-    }
-
-    // テンプレートがない場合はナレッジから回答を生成
-    if (!template && usedKnowledge.length > 0) {
-      template = {
-        id: 0,
-        answer: usedKnowledge.map(k => k.answer).join('\n\n'),
-      };
-      templateReason = 'ナレッジベースから生成';
-    }
-
-    // 最終的な回答がない場合
-    if (!template) {
-      template = {
-        id: 0,
-        answer: '申し訳ございませんが、お問い合わせ内容に関する情報が見つかりませんでした。詳細な情報をご提供いただけますと、より適切なご案内ができます。',
-      };
-      templateReason = '該当情報なし';
-    }
-
-    // レスポンスログを保存
-    await prisma.responseLog.create({
-      data: {
-        query,
-        response: template.answer,
-        used_knowledge_ids: usedKnowledge.map(k => k.id),
-        missing_tags: missingTags.map(t => t.tag_name),
-        missing_alerts: missingAlerts.map(a => a.word),
-        created_at: new Date(),
-      },
-    });
-
-    // 結果を返す
-    return NextResponse.json({
-      response: template.answer,
-      steps: [
-        {
-          step: 'アラートワード検出',
-          content: {
-            detected: detectedAlerts.reduce((acc, alert) => {
-              acc[alert.word] = true;
-              return acc;
-            }, {} as Record<string, boolean>),
-            missing: missingAlerts.map(a => a.word),
-            dates: seasonalInfo,
-          },
-        },
-        {
-          step: 'ナレッジ検索',
-          content: {
-            used: usedKnowledge.map(k => ({
-              id: k.id,
-              answer: k.answer,
-              category: [k.main_category, k.sub_category, k.detail_category].filter(Boolean).join(' > '),
-              tags: k.knowledge_tags.map(kt => kt.tag.tag_name),
-            })),
-            unused: unusedKnowledge.map(k => ({
-              id: k.id,
-              reason: k.issue || '使用不可としてマークされています',
-            })),
-            missing: missingTags.map(t => t.tag_name),
-          },
-        },
-        {
-          step: 'トレース',
-          content: {
-            success: usedKnowledge.length > 0,
-            missing: missingTags.length + missingAlerts.length,
-            suggestions,
-          },
-        },
-        {
-          step: 'テンプレート適用',
-          content: {
-            template: template.answer,
-            reason: templateReason,
-          },
-        },
-      ],
-    });
   } catch (error) {
-    console.error('API error:', error);
+    console.error('Error processing POST query:', error);
+    const errorMessage = "サーバーエラーが発生しました (POST)";
+    const errorWithAlerts = addMandatoryAlerts(errorMessage);
     return NextResponse.json(
-      { error: 'サーバーエラーが発生しました' },
+      { error: errorWithAlerts },
       { status: 500 }
     );
   }
-} 
+}

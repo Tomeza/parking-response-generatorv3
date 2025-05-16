@@ -2,54 +2,52 @@
 @tailwind components;
 @tailwind utilities;
 
-@theme {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-:root {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 30, 30, 30;
-  --background-end-rgb: 20, 20, 20;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    @apply bg-[#0a0c14] text-white min-h-screen;
   }
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      rgb(var(--background-start-rgb)),
-      rgb(var(--background-end-rgb))
-    )
-    fixed;
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-.highlight {
-  color: #0066FF;
-  font-weight: 500;
-}
-
-/* アニメーション */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
+@layer components {
+  .btn-primary {
+    @apply bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  
+  .btn-secondary {
+    @apply bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors;
   }
-}
 
-.fade-in {
-  animation: fadeIn 0.5s ease-out forwards;
+  .input-area {
+    @apply bg-gray-800 rounded-lg p-4 border border-gray-700;
+  }
+
+  .accordion-item {
+    @apply bg-gray-800 rounded-lg mb-2 overflow-hidden;
+  }
+
+  .accordion-header {
+    @apply flex justify-between items-center p-4 cursor-pointer hover:bg-gray-700 transition-colors;
+  }
+
+  .accordion-content {
+    @apply p-4 border-t border-gray-700;
+  }
+
+  .history-item {
+    @apply bg-gray-800 rounded-lg p-4 mb-2;
+  }
+
+  .tab-button {
+    @apply px-4 py-2 rounded-t-lg transition-colors;
+  }
+
+  .tab-button-active {
+    @apply bg-gray-800 text-white;
+  }
+
+  .tab-button-inactive {
+    @apply bg-gray-700 text-gray-300 hover:bg-gray-600;
+  }
 }
 
 /* スクロールバーのスタイル */
@@ -58,15 +56,13 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #2c2c2c;
-  border-radius: 4px;
+  @apply bg-gray-800 rounded;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #555;
-  border-radius: 4px;
+  @apply bg-gray-600 rounded hover:bg-gray-500;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #666;
+.dark-theme {
+  @apply bg-[#0a0c14];
 }

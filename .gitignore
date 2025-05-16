@@ -39,3 +39,34 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Logs
+*.log
+
+# Compiled JavaScript (if source is TypeScript)
+# Adjust path if needed, e.g., src/scripts/*.js
+simple-search-test.js
+
+# Backup files
+*.dump
+
+# Test results
+data/test-results.*
+
+# Build output
+dist/
+
+# 評価結果
+/evaluation_results/
+
+# Prisma の自動生成クライアントやマイグレーションの中間キャッシュ
+# /node_modules/ # Already covered
+/prisma/migrations/*   # ← 完成したマイグレーションは管理OK、評価用やリセット用はignore
+
+# TypeScript のビルド出力（もしあれば）
+# /dist/ # Already covered
+# /build/ # Already covered
+/src/**/*.js
+
+# 環境変数ファイル
+# .env* # Already covered

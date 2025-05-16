@@ -1,0 +1,287 @@
+{
+  "timestamp": "2025-04-24T10-28-33",
+  "metrics": {
+    "totalSearches": "N/A",
+    "cacheHits": "N/A",
+    "cacheMisses": "N/A",
+    "averageSearchTime": "N/A"
+  },
+  "summary": {
+    "totalQueries": 29,
+    "queriesWithResults": 0,
+    "averageResultCount": 0,
+    "averageSearchTime": 44.275862068965516,
+    "categorySummary": {
+      "一般的な問い合わせ": {
+        "totalQueries": 5,
+        "successRate": "0.00%",
+        "averageResults": "0.00",
+        "averageTime": "185.80ms"
+      },
+      "特殊パターン": {
+        "totalQueries": 5,
+        "successRate": "0.00%",
+        "averageResults": "0.00",
+        "averageTime": "7.60ms"
+      },
+      "長文クエリ": {
+        "totalQueries": 5,
+        "successRate": "0.00%",
+        "averageResults": "0.00",
+        "averageTime": "31.60ms"
+      },
+      "曖昧なクエリ": {
+        "totalQueries": 5,
+        "successRate": "0.00%",
+        "averageResults": "0.00",
+        "averageTime": "4.20ms"
+      },
+      "タグ付きクエリ": {
+        "totalQueries": 5,
+        "successRate": "0.00%",
+        "averageResults": "0.00",
+        "averageTime": "6.60ms"
+      },
+      "課題クエリ (改善要)": {
+        "totalQueries": 4,
+        "successRate": "0.00%",
+        "averageResults": "0.00",
+        "averageTime": "26.25ms"
+      }
+    }
+  },
+  "results": [
+    {
+      "category": "一般的な問い合わせ",
+      "query": "予約方法を教えてください",
+      "tags": null,
+      "time": 900,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "一般的な問い合わせ",
+      "query": "営業時間はいつですか",
+      "tags": null,
+      "time": 8,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "一般的な問い合わせ",
+      "query": "料金について知りたい",
+      "tags": null,
+      "time": 6,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "一般的な問い合わせ",
+      "query": "キャンセルはできますか",
+      "tags": null,
+      "time": 6,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "一般的な問い合わせ",
+      "query": "支払い方法は何がありますか",
+      "tags": null,
+      "time": 9,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "特殊パターン",
+      "query": "外車は停められますか？",
+      "tags": null,
+      "time": 5,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "特殊パターン",
+      "query": "国際線利用時の駐車場",
+      "tags": null,
+      "time": 5,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "特殊パターン",
+      "query": "レクサスは駐車できる？",
+      "tags": null,
+      "time": 15,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "特殊パターン",
+      "query": "BMWは停められますか",
+      "tags": null,
+      "time": 8,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "特殊パターン",
+      "query": "深夜の営業について",
+      "tags": null,
+      "time": 5,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "長文クエリ",
+      "query": "来週の金曜日から日曜日まで2泊3日で旅行に行くのですが、その間駐車場を利用することはできますか？予約は必要ですか？",
+      "tags": null,
+      "time": 11,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "長文クエリ",
+      "query": "先日予約した駐車場の日程を変更したいのですが、どのような手続きが必要でしょうか。予約番号はABC123です。",
+      "tags": null,
+      "time": 7,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "長文クエリ",
+      "query": "国内線の到着が深夜になる予定ですが、駐車場は24時間営業していますか？また、事前予約は必要ですか？",
+      "tags": null,
+      "time": 10,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "長文クエリ",
+      "query": "家族で旅行予定で、レンタカーを借りる予定です。駐車場の高さ制限はありますか？また、ワンボックスカーでも問題なく停められますか？",
+      "tags": null,
+      "time": 119,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "長文クエリ",
+      "query": "支払いはクレジットカードでできますか？また、後払いの場合は領収書は発行してもらえますか？",
+      "tags": null,
+      "time": 11,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "曖昧なクエリ",
+      "query": "停められますか",
+      "tags": null,
+      "time": 5,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "曖昧なクエリ",
+      "query": "時間は？",
+      "tags": null,
+      "time": 4,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "曖昧なクエリ",
+      "query": "いつ",
+      "tags": null,
+      "time": 3,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "曖昧なクエリ",
+      "query": "料金",
+      "tags": null,
+      "time": 6,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "曖昧なクエリ",
+      "query": "予約",
+      "tags": null,
+      "time": 3,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "タグ付きクエリ",
+      "query": "予約方法",
+      "tags": "予約",
+      "time": 5,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "タグ付きクエリ",
+      "query": "料金について",
+      "tags": "料金",
+      "time": 6,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "タグ付きクエリ",
+      "query": "営業時間",
+      "tags": "営業",
+      "time": 10,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "タグ付きクエリ",
+      "query": "キャンセル方法",
+      "tags": "キャンセル",
+      "time": 7,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "タグ付きクエリ",
+      "query": "支払い",
+      "tags": "料金,支払い",
+      "time": 5,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "課題クエリ (改善要)",
+      "query": "送迎が必要ない場合の利用プランは？",
+      "tags": null,
+      "time": 54,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "課題クエリ (改善要)",
+      "query": "繁忙期の利用制限",
+      "tags": null,
+      "time": 41,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "課題クエリ (改善要)",
+      "query": "繁忙期の予約のコツ",
+      "tags": null,
+      "time": 6,
+      "resultCount": 0,
+      "topResults": []
+    },
+    {
+      "category": "課題クエリ (改善要)",
+      "query": "最寄り駅からの移動手段",
+      "tags": null,
+      "time": 4,
+      "resultCount": 0,
+      "topResults": []
+    }
+  ]
+}
