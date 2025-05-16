@@ -33,6 +33,7 @@ async function importKnowledgeData(csvPath: string) {
     console.log(`データインポート開始: ${absoluteCsvPath}`);
 
     // --- 条件付き削除ロジック --- (コメントアウトを解除し、正式なロジックに)
+    /* // Users/user1/parking-response-generatorv3/scripts/import-data.ts
     if (path.basename(absoluteCsvPath) === 'knowledge.csv') { // Check for exact match
       console.warn('警告: knowledge.csv が指定されたため、既存のKnowledgeおよびKnowledgeTagデータを削除します。');
       // 既存のデータを削除
@@ -41,6 +42,8 @@ async function importKnowledgeData(csvPath: string) {
     } else {
       console.log('追加入力モード: 既存データは削除しません。');
     }
+    */
+    console.log('追加入力モード: 既存データは削除しません。'); // Always log this message
     // --- ここまで ---
 
     // CSVファイルを読み込む (引数のパスを使用)

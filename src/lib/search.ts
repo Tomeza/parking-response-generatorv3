@@ -113,20 +113,48 @@ export async function searchKnowledge(query: string, tags?: string): Promise<Sea
 
     console.time('SK_KuromojiTokenize');
     const tokens: IpadicFeatures[] = tokenizer.tokenize(normalizedQuery);
-    const searchTerms: string[] = tokens
-        .filter((token: IpadicFeatures) => VALID_POS.some(pos => token.pos.startsWith(pos)))
-        .map((token: IpadicFeatures) => token.basic_form === '*' ? token.surface_form : token.basic_form)
-        .filter((term: string): term is string => term !== null && term.length > 1);
-    const uniqueSearchTerms: string[] = [...new Set(searchTerms)];
+
+    // 1. Kuromojiでトークン化し、品詞情報と共に用語リストを生成
+    const searchTermsWithPos: Array<{ term: string; pos: string; detail_1: string | null }> = tokens
+      .map((token: IpadicFeatures) => ({
+        term: token.basic_form === '*' ? token.surface_form : token.basic_form,
+        pos: token.pos,
+        detail_1: token.pos_detail_1
+      }))
+      .filter(t => t.term !== null && t.term.length > 1); // 1文字以下のタームを除外
+
+    // 2. PGroonga検索用に名詞のみを抽出
+    const nounTermsForPGroonga = Array.from(
+      new Set(
+        searchTermsWithPos
+          .filter(t => t.pos === '名詞')
+          .map(t => t.term)
+      )
+    );
+    const pgroongaQueryString = nounTermsForPGroonga.join(' ');
+
+    // 以前の uniqueSearchTerms (名詞、動詞-自立、形容詞、副詞) はログ表示やフォールバック等で利用する場合のために残すことも検討可能
+    // 今回は pgroongaQueryString を主に使用する
+    const originalUniqueSearchTerms: string[] = [...new Set(searchTermsWithPos
+        .filter(t => 
+            t.pos === '名詞' || 
+            (t.pos === '動詞' && t.detail_1 === '自立') || 
+            t.pos === '形容詞' || 
+            t.pos === '副詞'
+        )
+        .map(t => t.term)
+    )];
+
     console.timeEnd('SK_KuromojiTokenize');
-    console.log('検索単語 (Kuromoji OR - Array):', uniqueSearchTerms);
+    console.log('検索単語 (元ロジック - Kuromoji OR - Array):', originalUniqueSearchTerms);
+    console.log('PGroonga 検索文字列 (名詞のみ):', pgroongaQueryString);
 
     allTokens = tokenizer.tokenize(normalizedQuery)
                         .map((token: IpadicFeatures) => token.basic_form === '*' ? token.surface_form : token.basic_form)
                         .filter((term): term is string => typeof term === 'string' && term.length > 0);
     allTokens = [...new Set(allTokens)];
 
-    if (uniqueSearchTerms.length === 0) {
+    if (originalUniqueSearchTerms.length === 0) {
       console.warn('No meaningful search terms extracted. Running fallback search.');
       console.time('SK_SimpleSearch_NoTerms');
       const fallbackResult = await simpleSearch(normalizedQuery, allTokens);
@@ -147,7 +175,7 @@ export async function searchKnowledge(query: string, tags?: string): Promise<Sea
         const res = await prisma.$queryRaw< { id: number; score: number }[] >`
           SELECT id, pgroonga_score(k.tableoid, k.ctid) AS score
           FROM "Knowledge" k
-          WHERE question &@~ ${uniqueSearchTerms.join(' ')}
+          WHERE question &@~ ${pgroongaQueryString}
           ORDER BY score DESC
           LIMIT ${fetchLimit};
         `.catch(err => { console.error("Question search failed:", err); return []; });
@@ -159,7 +187,7 @@ export async function searchKnowledge(query: string, tags?: string): Promise<Sea
         const res = await prisma.$queryRaw< { id: number; score: number }[] >`
           SELECT id, pgroonga_score(k.tableoid, k.ctid) AS score
           FROM "Knowledge" k
-          WHERE answer &@~ ${uniqueSearchTerms.join(' ')}
+          WHERE answer &@~ ${pgroongaQueryString}
           ORDER BY score DESC
           LIMIT ${fetchLimit};
         `.catch(err => { console.error("Answer search failed:", err); return []; });
