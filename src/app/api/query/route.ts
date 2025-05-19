@@ -13,25 +13,27 @@ async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
   return res;
 }
 
-export async function GET(request: NextRequest) {
-  const searchStartTime = Date.now();
-  const searchParams = request.nextUrl.searchParams;
-  const query = searchParams.get('q') || '';
-  const tags = searchParams.get('tags') || '';
+export async function GET(req: NextRequest) {
+  const requestStartTime = Date.now(); // ★: リクエスト開始時刻を記録
+  // const searchStartTime = Date.now(); // パフォーマンス計測用なのでコメントアウト
+  const { searchParams } = new URL(req.url);
+  const query = searchParams.get('q');
+  const query_id = searchParams.get('query_id');
+  const isDev = process.env.NODE_ENV === 'development';
+  const pgroongaOnly = searchParams.get('search_mode') === 'pgroonga_only';
+  // const tags = searchParams.get('tags') || ''; // tags は現在 searchKnowledge で使われていない
 
-  const decodedQuery = decodeURIComponent(query);
-  const decodedTags = decodeURIComponent(tags);
+  const decodedQuery = decodeURIComponent(query || '');
+  // const decodedTags = decodeURIComponent(tags); // tags は現在 searchKnowledge で使われていない
 
   if (!decodedQuery) {
-    return NextResponse.json(
-      { error: '検索クエリが指定されていません' },
-      { status: 400 }
-    );
+    return NextResponse.json({ response: "クエリを入力してください。" }, { status: 400 });
   }
 
+  let searchResults: SearchResult[] = [];
   try {
     console.log('Query received:', decodedQuery);
-    console.log('Tags received:', decodedTags);
+    // console.log('Tags received:', decodedTags);
 
     // 1. Analyze Query
     const analysisResult: any = await timed('A1_Step1_AnalyzeQuery', async () => {
@@ -43,25 +45,20 @@ export async function GET(request: NextRequest) {
     console.log('Detected alerts:', detectedAlerts);
     
     // 2. Search Knowledge
-    let searchResults: SearchResult[] = [];
-    try {
-      const rawResults = await timed('A1_Step2_SearchKnowledge', async () => {
-        return searchKnowledge(decodedQuery, decodedTags);
-      });
-      if (Array.isArray(rawResults)) {
-        searchResults = rawResults.filter(
-            (item): item is SearchResult => 
-                typeof item === 'object' && 
-                item !== null && 
-                typeof item.id === 'number' && 
-                typeof item.answer === 'string'
-        );
-        console.log('Search results from searchKnowledge (already sorted):', searchResults.map(r => ({ id: r.id, score: r.score })));
-      } else {
-        console.warn(`searchKnowledge for query "${decodedQuery}" with tags "${decodedTags}" did not return an array. Received:`, rawResults);
-      }
-    } catch(searchError) {
-      console.error(`Error during searchKnowledge for query "${decodedQuery}" with tags "${decodedTags}":`, searchError);
+    const results = await searchKnowledge(decodedQuery, isDev, pgroongaOnly, query_id ?? undefined);
+    
+    if (Array.isArray(results)) {
+      searchResults = results.filter(
+        (item): item is SearchResult => 
+          typeof item === 'object' && 
+          item !== null && 
+          typeof item.id === 'number' && 
+          (typeof item.question === 'string' || item.question === null) && 
+          (typeof item.answer === 'string' || item.answer === null)
+      );
+      console.log('Search results from searchKnowledge (filtered and validated):', searchResults.map(r => ({ id: r.id, score: r.score })));
+    } else {
+      console.warn(`searchKnowledge for query "${decodedQuery}" did not return an array. Received:`, results);
     }
 
     console.log('Search results count:', searchResults.length);
@@ -69,7 +66,10 @@ export async function GET(request: NextRequest) {
     if (searchResults.length === 0) {
       const notFoundMessage = "申し訳ございませんが、ご質問に対する具体的な情報が見つかりませんでした。";
       const notFoundWithAlerts = addMandatoryAlerts(notFoundMessage);
-      const searchTime = Date.now() - searchStartTime;
+      // const searchEndTime = Date.now(); // パフォーマンス計測用だったが一旦コメントアウト
+      // const searchTime = searchEndTime - searchStartTime; // パフォーマンス計測用だったが一旦コメントアウト
+      const requestEndTimeForNotFound = Date.now(); // ★: 終了時刻
+      const totalRequestTimeForNotFound = requestEndTimeForNotFound - requestStartTime; // ★: 全体時間
       const notFoundResponse = {
         response: notFoundWithAlerts,
         steps: [
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
           { step: "応答生成", content: { result: "フォールバック応答", template: "N/A", reason: "情報なし" } },
           { step: "アラート追加", content: { alerts: ["国際線利用不可", "外車受入不可"] } }
         ],
-        performance: { total_time_ms: searchTime }
+        performance: { total_time_ms: totalRequestTimeForNotFound } // ★: パフォーマンス情報を追加
       };
       await prisma.responseLog.create({
         data: { query: decodedQuery, response: notFoundWithAlerts, used_knowledge_ids: [], missing_tags: [], missing_alerts: [], created_at: new Date() }
@@ -153,7 +153,11 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    const searchTime = Date.now() - searchStartTime;
+    // const searchEndTime = Date.now(); // パフォーマンス計測用だったが一旦コメントアウト
+    // const searchTime = searchEndTime - searchStartTime; // パフォーマンス計測用だったが一旦コメントアウト
+    // const searchTime = Date.now() - searchStartTime; // この行もコメントアウト
+    const requestEndTime = Date.now(); // ★: 終了時刻
+    const totalRequestTime = requestEndTime - requestStartTime; // ★: 全体時間
     return NextResponse.json({
       response: finalResponseTextWithAlerts,
       responseId: bestMatch.id,
@@ -163,17 +167,20 @@ export async function GET(request: NextRequest) {
       steps: responseSteps,
       total_results: allOriginalResults.length,
       all_results: allOriginalResults.map(r => ({ id: r.id, score: r.score, note: r.note, detail_category: r.detail_category })),
-      performance: { total_time_ms: searchTime }
+      performance: { total_time_ms: totalRequestTime } // ★: パフォーマンス情報を追加
     });
 
   } catch (error: any) {
     console.error('Error processing query in GET:', error);
     const errorMessage = addMandatoryAlerts("検索処理中にエラーが発生しました (GET)");
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    const requestEndTimeForError = Date.now(); // ★: エラー時も念のため
+    const totalRequestTimeForError = requestEndTimeForError - requestStartTime; // ★: エラー時も念のため
+    return NextResponse.json({ error: errorMessage, performance: { total_time_ms: totalRequestTimeForError } }, { status: 500 }); // ★: パフォーマンス情報を追加
   }
 }
 
 export async function POST(req: NextRequest) {
+  const requestStartTime = Date.now(); // ★: リクエスト開始時刻を記録
   try {
     const { query } = await req.json();
 
@@ -191,14 +198,18 @@ export async function POST(req: NextRequest) {
     }
     const data = await res.json();
     
+    // POSTではGETの結果をそのまま返すので、GET側でperformanceが付与されていればそれが使われる
+    // 必要であれば、ここでも別途 requestEndTime を記録して performance を上書きまたは追加する
     return NextResponse.json(data);
 
   } catch (error) {
     console.error('Error processing POST query:', error);
     const errorMessage = "サーバーエラーが発生しました (POST)";
     const errorWithAlerts = addMandatoryAlerts(errorMessage);
+    const requestEndTimeForError = Date.now(); // ★: エラー時も念のため
+    const totalRequestTimeForError = requestEndTimeForError - requestStartTime; // ★: エラー時も念のため
     return NextResponse.json(
-      { error: errorWithAlerts },
+      { error: errorWithAlerts, performance: { total_time_ms: totalRequestTimeForError } }, // ★: パフォーマンス情報を追加
       { status: 500 }
     );
   }

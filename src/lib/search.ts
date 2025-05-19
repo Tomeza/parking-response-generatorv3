@@ -81,13 +81,14 @@ async function simpleSearch(query: string, terms: string[]): Promise<SearchResul
     }
 }
 
-export async function searchKnowledge(query: string, tags?: string): Promise<SearchResult[]> {
-  console.time('SK_Total'); // 関数全体の時間を計測開始
+export async function searchKnowledge(query: string, isDev: boolean, pgroongaOnly: boolean = false, query_id?: string): Promise<SearchResult[]> {
+  if (isDev) console.time('SK_Total');
+
   const normalizedQuery = query.trim();
-  const decodedTags = tags ? decodeURIComponent(tags) : '';
+  // const decodedTags = query_id ? decodeURIComponent(query_id) : ''; // query_id はタグではないので修正
 
   if (!normalizedQuery) {
-    console.timeEnd('SK_Total');
+    if (isDev) console.timeEnd('SK_Total');
     return [];
   }
 
@@ -101,7 +102,7 @@ export async function searchKnowledge(query: string, tags?: string): Promise<Sea
       console.time('SK_SimpleSearch_NoTokenizer');
       const fallbackResult = await simpleSearch(normalizedQuery, []);
       console.timeEnd('SK_SimpleSearch_NoTokenizer');
-      console.timeEnd('SK_Total');
+      if (isDev) console.timeEnd('SK_Total');
       return fallbackResult;
     }
   }
@@ -109,7 +110,10 @@ export async function searchKnowledge(query: string, tags?: string): Promise<Sea
   let allTokens: string[] = [];
   try {
     console.log('検索クエリ (Final Simplified Logic):', normalizedQuery);
-    console.log('入力タグ (Decoded):', decodedTags);
+    if (query_id) { // query_id があればログに出力
+      console.log('Query ID:', query_id);
+    }
+    // console.log('入力タグ (Decoded):', decodedTags); // decodedTags は query_id を誤って使っていたのでコメントアウト
 
     console.time('SK_KuromojiTokenize');
     const tokens: IpadicFeatures[] = tokenizer.tokenize(normalizedQuery);
@@ -159,7 +163,7 @@ export async function searchKnowledge(query: string, tags?: string): Promise<Sea
       console.time('SK_SimpleSearch_NoTerms');
       const fallbackResult = await simpleSearch(normalizedQuery, allTokens);
       console.timeEnd('SK_SimpleSearch_NoTerms');
-      console.timeEnd('SK_Total');
+      if (isDev) console.timeEnd('SK_Total');
       return fallbackResult;
     }
 
@@ -203,6 +207,13 @@ export async function searchKnowledge(query: string, tags?: string): Promise<Sea
       })()
     ]);
     console.timeEnd('SK_ParallelSearches');
+
+    // --- 追加: TQ132の場合のPGroonga検索結果ログ ---
+    if (isDev && query_id === 'TQ132') {
+      console.log(`[TQ132] PGroonga Question Results for "${query}":`, JSON.stringify(questionResults.map(r => ({ id: r.id, score: r.score })), null, 2));
+      console.log(`[TQ132] PGroonga Answer Results for "${query}":`, JSON.stringify(answerResults.map(r => ({ id: r.id, score: r.score })), null, 2));
+    }
+    // --- ここまで追加 ---
 
     console.log(`Question search results count: ${questionResults.length}`);
     console.log(`Answer search results count: ${answerResults.length}`);
@@ -290,7 +301,7 @@ export async function searchKnowledge(query: string, tags?: string): Promise<Sea
         console.time('SK_SimpleSearch_NoWeightedResults');
         const fallbackResult = await simpleSearch(normalizedQuery, allTokens);
         console.timeEnd('SK_SimpleSearch_NoWeightedResults');
-        console.timeEnd('SK_Total');
+        if (isDev) console.timeEnd('SK_Total');
         return fallbackResult;
     }
 
@@ -339,7 +350,12 @@ export async function searchKnowledge(query: string, tags?: string): Promise<Sea
       score: r.score,
       scoreDetails: r.score_details 
     })));
-    console.timeEnd('SK_Total');
+
+    // if (isDev && query_id === 'TQ132') { // こちらのログは一旦コメントアウト
+    //   console.log(`[TQ132] Raw results from $queryRaw for "${query}":`, JSON.stringify(rerankedResults.map(r => ({ id: r.id, score: r.score, question: r.question, answer: r.answer })), null, 2));
+    // }
+
+    if (isDev) console.timeEnd('SK_Total');
     return rerankedResults;
 
   } catch (error) {
@@ -349,12 +365,12 @@ export async function searchKnowledge(query: string, tags?: string): Promise<Sea
       console.time('SK_SimpleSearch_ErrorFallback');
       const fallbackResult = await simpleSearch(normalizedQuery, allTokens);
       console.timeEnd('SK_SimpleSearch_ErrorFallback');
-      console.timeEnd('SK_Total');
+      if (isDev) console.timeEnd('SK_Total');
       return fallbackResult;
   } catch (fallbackError) {
         console.error('Fallback search also failed after error:', fallbackError);
-        console.timeEnd('SK_Total');
-        return [];
+    if (isDev) console.timeEnd('SK_Total');
+    return [];
     }
   }
 }
