@@ -111,6 +111,7 @@ async function queryAPI(query: TestQuery): Promise<ApiResponse> {
     const response = await axiosInstance.get(API_ENDPOINT, {
       params: {
         q: query.query_text,
+        query_id: query.query_id,
         // Add other potential params like tags if needed
         // tags: query.tags 
       },
@@ -177,13 +178,27 @@ function calculateOverallStats(results: EvaluationResult[]): any {
   const avgAccuracy = totalCount > 0 ? sumAccuracy / totalCount : 0;
 
   const validTimes = results.map(r => r.api_total_time_ms).filter(t => t !== undefined && t !== null) as number[];
+  validTimes.sort((a, b) => a - b); // Sort times for percentile calculation
+
   const sumTime = validTimes.reduce((sum, t) => sum + t, 0);
   const avgTime = validTimes.length > 0 ? sumTime / validTimes.length : 0;
+
+  let p95Time = 0;
+  let p99Time = 0;
+  if (validTimes.length > 0) {
+    const p95Index = Math.floor(validTimes.length * 0.95) -1; // -1 for 0-based index
+    p95Time = validTimes[Math.max(0, p95Index)]; // Ensure index is not negative
+
+    const p99Index = Math.floor(validTimes.length * 0.99) -1; // -1 for 0-based index
+    p99Time = validTimes[Math.max(0, p99Index)]; // Ensure index is not negative
+  }
 
   const stats = {
     total_queries: totalCount,
     average_accuracy: avgAccuracy.toFixed(3),
     average_response_time_ms: avgTime.toFixed(2),
+    p95_response_time_ms: p95Time > 0 ? p95Time.toFixed(2) : 'N/A',
+    p99_response_time_ms: p99Time > 0 ? p99Time.toFixed(2) : 'N/A',
     // Add more stats as needed (e.g., success rate, error count)
   };
   console.log("--- Overall Statistics ---");
@@ -206,13 +221,27 @@ function calculatePersonaStats(results: EvaluationResult[]): any {
     const avgAccuracy = sumAccuracy / totalCount;
 
     const validTimes = personaResults.map(r => r.api_total_time_ms).filter(t => t !== undefined && t !== null) as number[];
+    validTimes.sort((a, b) => a - b); // Sort times for percentile calculation
+
     const sumTime = validTimes.reduce((sum, t) => sum + t, 0);
     const avgTime = validTimes.length > 0 ? sumTime / validTimes.length : 0;
+
+    let p95Time = 0;
+    let p99Time = 0;
+    if (validTimes.length > 0) {
+      const p95Index = Math.floor(validTimes.length * 0.95) - 1; // -1 for 0-based index
+      p95Time = validTimes[Math.max(0, p95Index)]; // Ensure index is not negative
+
+      const p99Index = Math.floor(validTimes.length * 0.99) - 1; // -1 for 0-based index
+      p99Time = validTimes[Math.max(0, p99Index)]; // Ensure index is not negative
+    }
 
     statsByPersona[persona] = {
       total_queries: totalCount,
       average_accuracy: avgAccuracy.toFixed(3),
       average_response_time_ms: avgTime.toFixed(2),
+      p95_response_time_ms: p95Time > 0 ? p95Time.toFixed(2) : 'N/A',
+      p99_response_time_ms: p99Time > 0 ? p99Time.toFixed(2) : 'N/A',
     };
   });
 
