@@ -23,9 +23,12 @@
     "test-hours": "NODE_OPTIONS='' ts-node --compiler-options '{\"module\":\"CommonJS\"}' tests/test-hours-queries.ts",
     "test-complaint": "NODE_OPTIONS='' ts-node --compiler-options '{\"module\":\"CommonJS\"}' tests/test-complaint-queries.ts",
     "dryrun-data": "NODE_OPTIONS='' ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/import-data.ts --dryrun",
-    "generate-embeddings": "NODE_OPTIONS='' ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/generate-embeddings.ts",
+    "generate-embeddings": "NODE_OPTIONS='' ts-node --compiler-options '{\"module\":\"CommonJS\", \"moduleResolution\":\"node\"}' scripts/generate-embeddings.ts",
     "test-vector-search": "NODE_OPTIONS='' ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/test-vector-search.ts",
-    "prisma:migrate": "prisma migrate dev"
+    "evaluate:system": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/evaluate_system.ts",
+    "prisma:migrate": "prisma migrate dev",
+    "report:generate": "NODE_OPTIONS='' ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/generate-test-report.ts",
+    "test:dimensions": "NODE_OPTIONS='' ts-node --compiler-options '{\"module\":\"CommonJS\"}' tests/testSearchDimensions.ts"
   },
   "keywords": [],
   "author": "",

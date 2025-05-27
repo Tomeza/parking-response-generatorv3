@@ -4,9 +4,6 @@ CREATE SCHEMA IF NOT EXISTS "extensions";
 -- CreateSchema
 CREATE SCHEMA IF NOT EXISTS "public";
 
--- CreateExtension
-CREATE EXTENSION IF NOT EXISTS vector;
-
 -- CreateTable
 CREATE TABLE "public"."Knowledge" (
     "id" SERIAL NOT NULL,
@@ -22,6 +19,7 @@ CREATE TABLE "public"."Knowledge" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "embedding_vector" vector,
+    "embedding_vector_1536" vector,
 
     CONSTRAINT "Knowledge_pkey" PRIMARY KEY ("id")
 );
@@ -66,6 +64,9 @@ CREATE TABLE "public"."ResponseLog" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "knowledge_id" INTEGER,
     "response_count" INTEGER NOT NULL DEFAULT 1,
+    "embeddingDims" INTEGER NOT NULL DEFAULT 768,
+    "embeddingModel" TEXT NOT NULL DEFAULT 'text-embedding-v1',
+    "quantized" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "ResponseLog_pkey" PRIMARY KEY ("id")
 );
@@ -168,6 +169,12 @@ CREATE INDEX "knowledge_pgroonga_main_category_idx" ON "public"."Knowledge"("mai
 
 -- CreateIndex
 CREATE INDEX "knowledge_pgroonga_sub_category_idx" ON "public"."Knowledge"("sub_category");
+
+-- CreateIndex
+CREATE INDEX "idx_knowledge_embedding_1536_hnsw" ON "public"."Knowledge"("embedding_vector_1536");
+
+-- CreateIndex
+CREATE INDEX "idx_knowledge_embedding_512_hnsw" ON "public"."Knowledge"("embedding_vector");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Tag_tag_name_key" ON "public"."Tag"("tag_name");
