@@ -27,7 +27,7 @@ export async function GET(request: Request) {
     const normalizedQuery = decodedQuery.normalize('NFC');
     console.log('検索クエリ (normalized):', normalizedQuery);
     
-    const results = await searchKnowledge(normalizedQuery);
+    const results = await searchKnowledge(normalizedQuery, false);
     return NextResponse.json({ results });
   } catch (error) {
     console.error('Search error:', error);

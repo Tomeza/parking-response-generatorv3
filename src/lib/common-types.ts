@@ -2,7 +2,10 @@
  * プロジェクト全体で共通して使用する型定義
  */
 
-import { Knowledge } from '@prisma/client';
+import { Knowledge as PrismaKnowledge } from '@prisma/client';
+
+// Knowledge型を再エクスポート、もしくは必要に応じて拡張
+export type Knowledge = PrismaKnowledge;
 
 /**
  * 検索結果の共通型定義
