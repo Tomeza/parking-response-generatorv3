@@ -7,30 +7,29 @@ datasource db {
   provider          = "postgresql"
   url               = env("DATABASE_URL")
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
-  extensions        = [vector]
+  extensions        = [uuid_ossp(map: "uuid-ossp", schema: "extensions"), vector]
   schemas           = ["extensions", "public"]
 }
 
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model Knowledge {
-  id                    Int                          @id @default(autoincrement())
-  main_category         String?                      @db.VarChar(50)
-  sub_category          String?                      @db.VarChar(50)
-  detail_category       String?                      @db.VarChar(50)
-  question              String?
-  answer                String
-  is_template           Boolean                      @default(false)
-  usage                 String?                      @db.VarChar(10)
-  note                  String?
-  issue                 String?
-  createdAt             DateTime                     @default(now())
-  updatedAt             DateTime                     @updatedAt
-  embedding_vector      Unsupported("vector")?
-  embedding_vector_1536 Unsupported("vector")?
-  feedback_weights      FeedbackWeight[]
-  question_variations   KnowledgeQuestionVariation[]
-  knowledge_tags        KnowledgeTag[]
-  response_logs         ResponseLog[]
+  id                  Int                          @id @default(autoincrement())
+  main_category       String?                      @db.VarChar(50)
+  sub_category        String?                      @db.VarChar(50)
+  detail_category     String?                      @db.VarChar(50)
+  question            String?
+  answer              String
+  is_template         Boolean                      @default(false)
+  usage               String?                      @db.VarChar(10)
+  note                String?
+  issue               String?
+  createdAt           DateTime                     @default(now())
+  updatedAt           DateTime                     @updatedAt
+  embedding_vector    Unsupported("vector")?
+  feedback_weights    FeedbackWeight[]
+  question_variations KnowledgeQuestionVariation[]
+  knowledge_tags      KnowledgeTag[]
+  response_logs       ResponseLog[]
 
   @@index([question, answer])
   @@index([main_category, sub_category])
@@ -39,8 +38,7 @@ model Knowledge {
   @@index([question], map: "knowledge_pgroonga_question_idx")
   @@index([main_category], map: "knowledge_pgroonga_main_category_idx")
   @@index([sub_category], map: "knowledge_pgroonga_sub_category_idx")
-  @@index([embedding_vector_1536], map: "idx_knowledge_embedding_1536_hnsw")
-  @@index([embedding_vector], map: "idx_knowledge_embedding_512_hnsw")
+  @@index([embedding_vector])
   @@schema("public")
 }
 
