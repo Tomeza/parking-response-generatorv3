@@ -59,6 +59,12 @@ const TEST_QUERIES_PATH = path.join(PROJECT_ROOT, 'data/test_queries.csv');
 const RESULTS_DIR = path.join(PROJECT_ROOT, 'evaluation_results');
 const API_ENDPOINT = 'http://localhost:3000/api/query'; // Adjust if your API runs elsewhere
 
+// --- テストしたい ef_search の値を設定 (undefined なら送らない) ---
+const EF_SEARCH_TO_TEST: number | undefined = undefined; // ここで値を変更してテスト
+// 例えば TQ064 のために試す値: 80, 100, 120, 150など
+// 通常時は undefined にしておく
+// --------------------------------------------------------------
+
 // --- Helper Functions (Stubs) ---
 
 async function loadTestQueries(filePath: string): Promise<TestQuery[]> {
@@ -105,15 +111,21 @@ async function loadTestQueries(filePath: string): Promise<TestQuery[]> {
   return results;
 }
 
-async function queryAPI(query: TestQuery): Promise<ApiResponse> {
-  console.log(`  Querying API for [${query.query_id}] (${query.persona}): "${query.query_text.substring(0, 50)}..."`);
+async function queryAPI(query: TestQuery, efSearchValue?: number): Promise<ApiResponse> {
+  console.log(`  Querying API for [${query.query_id}] (${query.persona}): "${query.query_text.substring(0, 50)}..." ${efSearchValue ? `(efSearch: ${efSearchValue})` : ''}`);
   try {
-    const response = await axiosInstance.get(API_ENDPOINT, {
-      params: {
+    const params: Record<string, string | number> = {
         q: query.query_text,
+        query_id: query.query_id,
         // Add other potential params like tags if needed
         // tags: query.tags 
-      },
+    };
+    if (efSearchValue !== undefined) {
+      params.efSearch = efSearchValue;
+    }
+
+    const response = await axiosInstance.get(API_ENDPOINT, {
+      params: params,
       timeout: 10000 // 10 second timeout
     });
     // Basic validation of response structure
@@ -177,13 +189,27 @@ function calculateOverallStats(results: EvaluationResult[]): any {
   const avgAccuracy = totalCount > 0 ? sumAccuracy / totalCount : 0;
 
   const validTimes = results.map(r => r.api_total_time_ms).filter(t => t !== undefined && t !== null) as number[];
+  validTimes.sort((a, b) => a - b); // Sort times for percentile calculation
+
   const sumTime = validTimes.reduce((sum, t) => sum + t, 0);
   const avgTime = validTimes.length > 0 ? sumTime / validTimes.length : 0;
+
+  let p95Time = 0;
+  let p99Time = 0;
+  if (validTimes.length > 0) {
+    const p95Index = Math.floor(validTimes.length * 0.95) -1; // -1 for 0-based index
+    p95Time = validTimes[Math.max(0, p95Index)]; // Ensure index is not negative
+
+    const p99Index = Math.floor(validTimes.length * 0.99) -1; // -1 for 0-based index
+    p99Time = validTimes[Math.max(0, p99Index)]; // Ensure index is not negative
+  }
 
   const stats = {
     total_queries: totalCount,
     average_accuracy: avgAccuracy.toFixed(3),
     average_response_time_ms: avgTime.toFixed(2),
+    p95_response_time_ms: p95Time > 0 ? p95Time.toFixed(2) : 'N/A',
+    p99_response_time_ms: p99Time > 0 ? p99Time.toFixed(2) : 'N/A',
     // Add more stats as needed (e.g., success rate, error count)
   };
   console.log("--- Overall Statistics ---");
@@ -206,13 +232,27 @@ function calculatePersonaStats(results: EvaluationResult[]): any {
     const avgAccuracy = sumAccuracy / totalCount;
 
     const validTimes = personaResults.map(r => r.api_total_time_ms).filter(t => t !== undefined && t !== null) as number[];
+    validTimes.sort((a, b) => a - b); // Sort times for percentile calculation
+
     const sumTime = validTimes.reduce((sum, t) => sum + t, 0);
     const avgTime = validTimes.length > 0 ? sumTime / validTimes.length : 0;
+
+    let p95Time = 0;
+    let p99Time = 0;
+    if (validTimes.length > 0) {
+      const p95Index = Math.floor(validTimes.length * 0.95) - 1; // -1 for 0-based index
+      p95Time = validTimes[Math.max(0, p95Index)]; // Ensure index is not negative
+
+      const p99Index = Math.floor(validTimes.length * 0.99) - 1; // -1 for 0-based index
+      p99Time = validTimes[Math.max(0, p99Index)]; // Ensure index is not negative
+    }
 
     statsByPersona[persona] = {
       total_queries: totalCount,
       average_accuracy: avgAccuracy.toFixed(3),
       average_response_time_ms: avgTime.toFixed(2),
+      p95_response_time_ms: p95Time > 0 ? p95Time.toFixed(2) : 'N/A',
+      p99_response_time_ms: p99Time > 0 ? p99Time.toFixed(2) : 'N/A',
     };
   });
 
@@ -223,32 +263,13 @@ function calculatePersonaStats(results: EvaluationResult[]): any {
 
 // --- Main Execution ---
 async function runEvaluation() {
-  console.log('Starting evaluation run...');
-
-  // 1. Load Test Queries
-  let allTestQueries: TestQuery[]; // Renamed from testQueries
-  try {
-    allTestQueries = await loadTestQueries(TEST_QUERIES_PATH);
-    if (allTestQueries.length === 0) {
-        console.error('No test queries loaded. Exiting.');
-        return;
-    }
-  } catch (error) {
-    console.error('Failed to load test queries. Exiting.');
-    return;
-  }
-
-  // Limit the number of queries to run for faster testing
-  // const MAX_QUERIES_TO_RUN = 10; // Set to 10 (from 20)
-  // const testQueries = allTestQueries.slice(0, MAX_QUERIES_TO_RUN);
-  // console.log(`Running evaluation for the first ${testQueries.length} queries out of ${allTestQueries.length} total.`);
-  console.log(`Running evaluation for all ${allTestQueries.length} queries.`);
+  console.log("Starting evaluation process...");
+  const allTestQueries = await loadTestQueries(TEST_QUERIES_PATH);
   
-  // 2. Execute Queries and Collect Results
-  const results: EvaluationResult[] = [];
-  // Using a sequential loop to avoid overwhelming the API endpoint
-  for (const query of allTestQueries) { // Changed from testQueries to allTestQueries
-    const apiResponse = await queryAPI(query);
+  const evaluationResults: EvaluationResult[] = [];
+
+  for (const query of allTestQueries) {
+    const apiResponse = await queryAPI(query, EF_SEARCH_TO_TEST);
     const accuracy = calculateAccuracy(query.expected_knowledge_ids, apiResponse.knowledge_id);
     
     const result: EvaluationResult = {
@@ -260,19 +281,19 @@ async function runEvaluation() {
       api_total_time_ms: apiResponse.performance?.total_time_ms,
       accuracy
     };
-    results.push(result);
+    evaluationResults.push(result);
     // Optional: Add a small delay between requests if needed
     await new Promise(resolve => setTimeout(resolve, 200)); 
   }
   
   // 3. Save Results
-  await saveResults(results, RESULTS_DIR);
+  await saveResults(evaluationResults, RESULTS_DIR);
   
   // 4. Calculate and Print Stats
-  calculateOverallStats(results);
-  calculatePersonaStats(results);
+  calculateOverallStats(evaluationResults);
+  calculatePersonaStats(evaluationResults);
 
-  console.log('Evaluation run finished.');
+  console.log("--- Evaluation Process Finished ---");
 }
 
 // Run the main function
