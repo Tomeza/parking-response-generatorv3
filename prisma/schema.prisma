@@ -1,12 +1,14 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["multiSchema"]
+  previewFeatures = ["multiSchema", "postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-  schemas  = ["extensions", "public"]
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+  extensions        = [uuid_ossp(map: "uuid-ossp", schema: "extensions"), vector]
+  schemas           = ["extensions", "public"]
 }
 
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
@@ -23,7 +25,7 @@ model Knowledge {
   issue               String?
   createdAt           DateTime                     @default(now())
   updatedAt           DateTime                     @updatedAt
-  embedding_vector    Unsupported("vector(1536)")?
+  embedding_vector    Unsupported("vector")?
   feedback_weights    FeedbackWeight[]
   question_variations KnowledgeQuestionVariation[]
   knowledge_tags      KnowledgeTag[]
@@ -36,6 +38,7 @@ model Knowledge {
   @@index([question], map: "knowledge_pgroonga_question_idx")
   @@index([main_category], map: "knowledge_pgroonga_main_category_idx")
   @@index([sub_category], map: "knowledge_pgroonga_sub_category_idx")
+  @@index([embedding_vector])
   @@schema("public")
 }
 
@@ -82,6 +85,9 @@ model ResponseLog {
   created_at         DateTime   @default(now())
   knowledge_id       Int?
   response_count     Int        @default(1)
+  embeddingDims      Int        @default(768)
+  embeddingModel     String     @default("text-embedding-v1")
+  quantized          Boolean    @default(false)
   knowledge          Knowledge? @relation(fields: [knowledge_id], references: [id])
 
   @@schema("public")

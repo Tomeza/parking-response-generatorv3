@@ -1025,3 +1025,63 @@ LLM は "要約・合成が必要なとき"だけ使うのが、速度とコス�
 ---
 
 このドキュメントをチームのナレッジベースに保存し、随時更新してください。
+
+## 6. Prismaマイグレーションのトラブルシューティングと運用フロー (2025/05/23追記)
+
+開発過程で、Prismaとpgvector拡張機能を使用したSupabase環境において、特にシャドウデータベース利用時のマイグレーション (P3006エラー `type "vector" does not exist`) に関する問題が発生しました。以下に、その解決に至るまでの経緯の要点と、現在の推奨運用フローを記録します。
+
+### 6.1 発生した主な問題
+
+*   `prisma migrate dev` 実行時、シャドウデータベースの作成・マイグレーション適用フェーズで `P3006: Migration ... failed to apply cleanly to the shadow database. Error: ERROR: type "vector" does not exist` が頻発。
+*   原因として、Prisma EngineがシャドウDBに接続後、マイグレーションSQL（`vector` 型を含むテーブル定義）を適用する前に、`vector` 拡張機能が有効になっていない（またはPrismaから見えていない）ことが特定されました。
+*   シャドウDBとしてローカルDockerコンテナ (公式 `pgvector/pgvector:pg15` イメージ) を使用し、以下の対策を試みました。
+    *   `.env` ファイルおよび `schema.prisma` での `SHADOW_DATABASE_URL` の明示的な設定。
+    *   `schema.prisma` の `datasource db` ブロックでの `extensions = [vector]` (または `pgvector`) と `previewFeatures = ["postgresqlExtensions", "multiSchema"]` の設定。
+    *   Dockerコンテナ内で直接 `CREATE EXTENSION vector;` を実行。
+    *   Dockerコンテナ起動時に初期化スクリプト (`/docker-entrypoint-initdb.d/`) を使用し、`CREATE SCHEMA extensions;` および `CREATE EXTENSION vector;` を自動実行。
+*   これらの対策にもかかわらず、PrismaがシャドウDBに対してマイグレーションを実行する特定のタイミングで `vector` 型を認識できない問題が継続しました。
+*   ユーザー様からの詳細な分析により、PrismaがシャドウDBの `extensions` スキーマを一度DROPし、その後にマイグレーションを適用しようとする過程で `vector` 型が（一時的に）利用できなくなる、というPrisma側の既知のバグに近い挙動である可能性が示唆されました。
+
+### 6.2 確立された現在のマイグレーション運用フロー (シャドウDB回避)
+
+上記の問題とデバッグの長期化を考慮し、シャドウデータベースの検証フェーズをスキップし、より直接的にマイグレーションを管理する運用フローに切り替えました。
+
+1.  **前提:**
+    *   ローカルの `prisma/migrations` フォルダには、現在の本番DBスキーマを正確に反映したベースラインマイグレーション (`0_baseline_from_existing_db` など) が1つだけ存在する。
+    *   このベースラインマイグレーションは、`prisma migrate resolve --applied <baseline_migration_name>` によって、本番DB (`_prisma_migrations` テーブル) に「適用済み」として記録されている。
+    *   `init-shadowdb.sql` やシャドウDB用のDockerコンテナは、このフローでは積極的には使用しません（ただし、ローカルでのテスト用に保持するのは任意）。
+
+2.  **スキーマ変更時の手順:**
+    a.  **`prisma/schema.prisma` の編集:**
+        モデルの追加、フィールドの変更など、必要なスキーマ定義の変更を行います。
+    b.  **マイグレーションSQLファイルの生成 (シャドウDB検証なし):**
+        ```bash
+        npx prisma migrate dev --name <your_migration_name> --create-only
+        ```
+        *   `<your_migration_name>` には変更内容を具体的に示す名前 (例: `add_user_email_field`) を指定します。
+        *   このコマンドはシャドウDBを使用せず、変更差分に基づいたSQLファイルを `prisma/migrations` ディレクトリ内にのみ生成します。
+    c.  **生成されたSQLファイルの目視確認 (必須):**
+        *   新しく生成された `prisma/migrations/<timestamp>_<your_migration_name>/migration.sql` ファイルを開き、意図した通りのSQL文（`ALTER TABLE`, `CREATE TABLE` など）が記述されているか、予期せぬテーブル削除やデータ損失に繋がる操作が含まれていないかを**必ず**確認します。
+    d.  **本番データベースへのマイグレーション適用:**
+        ```bash
+        npx prisma migrate deploy
+        ```
+        *   このコマンドは、ローカルの `prisma/migrations` フォルダ内の未適用マイグレーションを、シャドウDB検証なしに**直接本番データベースに適用**します。
+        *   適用後、本番DBの `_prisma_migrations` テーブルに新しいマイグレーションが記録されます。
+    e.  **(任意だが推奨) Prisma Client の再生成:**
+        スキーマ変更をクライアントコードに反映させるため、以下を実行します。
+        ```bash
+        npx prisma generate
+        ```
+    f.  **(任意だが推奨) 本番DBとの差分最終確認:**
+        適用後、念のため本番DBとローカルスキーマに差分がないことを確認します。
+        ```bash
+        npx prisma migrate diff --from-schema-datasource prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma
+        ```
+        結果が `No difference detected.` であれば問題ありません。
+
+3.  **注意点:**
+    *   このフローではシャドウDBによる事前検証が行われないため、ステップ `2.c` の**生成されたSQLの目視確認が極めて重要**になります。
+    *   SupabaseはPoint-in-Time Recovery (PITR) を提供しているため、万が一マイグレーション適用後に問題が発生した場合でも、データベースを過去の状態に復元することが可能です（プランによる）。しかし、これを頼りにするのではなく、事前のSQL確認を徹底することが推奨されます。
+
+この運用フローにより、pgvector利用時のシャドウDB問題を回避しつつ、Prismaマイグレーションを管理していく方針です。
