@@ -1,6 +1,5 @@
 import './globals.css';
 import { Inter } from 'next/font/google';
-import AuthProvider from './providers/AuthProvider';
 import { Metadata } from 'next';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -28,7 +27,7 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body className={`${inter.className} dark-theme`}>
-        <AuthProvider>{children}</AuthProvider>
+        {children}
       </body>
     </html>
   );
