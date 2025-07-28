@@ -23,7 +23,7 @@ model Knowledge {
   issue               String?
   createdAt           DateTime                     @default(now())
   updatedAt           DateTime                     @updatedAt
-  embedding_vector    Unsupported("vector(1536)")?
+  embedding_vector    Unsupported("vector")?
   feedback_weights    FeedbackWeight[]
   question_variations KnowledgeQuestionVariation[]
   knowledge_tags      KnowledgeTag[]
@@ -167,5 +167,70 @@ model KnowledgeQuestionVariation {
 
   @@index([variation])
   @@index([knowledge_id])
+  @@schema("public")
+}
+
+model FaqRaw {
+  id              Int                @id @default(autoincrement())
+  question        String
+  answer          String
+  category        String?
+  tags            String[]
+  complexity      Int?
+  requires_review Boolean            @default(false)
+  review_reason   String?
+  embedding       Unsupported("vector")?
+  created_at      DateTime           @default(now()) @db.Timestamptz(3)
+  updated_at      DateTime           @default(now()) @db.Timestamptz(3)
+  usage_stats     FaqUsageStats[]
+  reviews         FaqReviewHistory[]
+
+  @@map("faq_raw")
+  @@schema("public")
+}
+
+model FaqReviewHistory {
+  id             Int      @id @default(autoincrement())
+  faqId          Int      @map("faq_id")
+  originalAnswer String   @map("original_answer")
+  refinedAnswer  String   @map("refined_answer")
+  reviewType     String   @map("review_type")
+  reviewer       String?
+  reviewDate     DateTime @default(now()) @map("review_date")
+  faq            FaqRaw   @relation(fields: [faqId], references: [id], onDelete: Cascade)
+
+  @@map("faq_review_history")
+  @@schema("public")
+}
+
+model FaqReviewTriggers {
+  id            Int      @id @default(autoincrement())
+  conditionType String   @map("condition_type")
+  threshold     Json
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @map("updated_at")
+
+  @@map("faq_review_triggers")
+  @@schema("public")
+}
+
+model FaqUsageStats {
+  id         BigInt    @id @default(autoincrement())
+  faq        FaqRaw    @relation(fields: [faqId], references: [id], onDelete: Cascade)
+  faqId      Int
+  queryHash  String
+  usedAt     DateTime  @default(now()) @db.Timestamptz(3)
+  success    Boolean   @default(false)
+  route      String
+  latencyMs  Int
+  userId     String?
+  sessionId  String?
+  queryText  String
+
+  @@index([faqId])
+  @@index([queryHash])
+  @@index([usedAt])
+  @@map("faq_usage_stats")
   @@schema("public")
 }
