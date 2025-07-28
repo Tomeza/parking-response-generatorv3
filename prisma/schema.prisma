@@ -234,3 +234,21 @@ model FaqUsageStats {
   @@map("faq_usage_stats")
   @@schema("public")
 }
+
+model FaqClassificationLog {
+  id          String    @id @default(cuid())
+  faqId       String
+  category    String
+  confidence  Float
+  reason      String
+  needsReview Boolean   @default(false)
+  reviewed    Boolean   @default(false)
+  reviewedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([faqId])
+  @@index([category])
+  @@index([createdAt])
+  @@schema("public")
+}

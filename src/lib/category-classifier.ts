@@ -1,5 +1,6 @@
 import { OpenAI } from "openai";
 import { z } from "zod";
+import { prisma } from "./prisma";
 
 const categorySchema = z.object({
   category: z.enum(['予約', '送迎', '支払い', '設備', 'トラブル', 'その他']),
@@ -17,35 +18,59 @@ const SYSTEM_PROMPT = `あなたはFAQのカテゴリ分類を行うエキスパ
    - 予約可能期間、締切時間
    - 予約の確認方法、予約番号
    - 複数日程の予約、定期予約
+   
+   例示：
+   Q: 予約をキャンセルしたいのですが、手数料はかかりますか？
+   A: キャンセル料は予約時間の24時間前までは無料、以降は料金の50%となります。
 
 2. 送迎
    - 送迎サービスの利用方法
    - 定員制限、同乗者数
    - 対応可能な車種、サイズ
    - 送迎ルート、時間帯
+   
+   例示：
+   Q: 送迎バスの最終便は何時ですか？
+   A: 最終便は平日21:30、土日祝は20:30発です。
 
 3. 支払い
    - 料金体系、割引
    - 支払方法（現金、カード、電子マネー）
    - 領収書発行、請求書
    - 返金、キャンセル料
+   
+   例示：
+   Q: クレジットカードは使えますか？
+   A: VISA、Mastercard、JCBがご利用いただけます。
 
 4. 設備
    - 駐車場の物理的設備（高さ制限、車止め）
    - EV充電設備、充電方式
    - 照明、防犯カメラ
    - トイレ、待合所
+   
+   例示：
+   Q: EV充電設備はありますか？
+   A: はい、急速充電器2台（CHAdeMO/CCS対応）を設置しています。
 
 5. トラブル
    - 緊急時の連絡先、対応手順
    - 入出庫トラブル、機器故障
    - 事故、損傷、紛失
    - システム障害、アプリ不具合
+   
+   例示：
+   Q: 駐車券を紛失してしまいました。
+   A: サービスカウンターにて、お客様の利用記録を確認の上、再発行いたします。
 
 6. その他
    - 上記カテゴリに明確に分類できない内容
    - 複数カテゴリに跨る一般的な質問
    - 新規サービスや特殊なケース
+   
+   例示：
+   Q: 駐車場の営業時間を教えてください。
+   A: 24時間365日営業しています。
 
 出力形式:
 {
@@ -74,7 +99,15 @@ export interface CategoryClassificationResult {
   reviewReason?: string;
 }
 
-export async function classifyFaqCategory(faq: { question: string; answer: string }): Promise<CategoryClassificationResult> {
+export interface CategoryMetrics {
+  totalClassifications: number;
+  categoryDistribution: Record<string, number>;
+  averageConfidence: number;
+  reviewRate: number;
+  lastReviewDate?: Date;
+}
+
+export async function classifyFaqCategory(faq: { question: string; answer: string; id?: string }): Promise<CategoryClassificationResult> {
   const openai = new OpenAI();
 
   try {
@@ -97,6 +130,19 @@ export async function classifyFaqCategory(faq: { question: string; answer: strin
     }
 
     const result = categorySchema.parse(JSON.parse(content));
+    
+    // 分類結果をデータベースに記録
+    if (faq.id) {
+      await prisma.faqClassificationLog.create({
+        data: {
+          faqId: faq.id,
+          category: result.category,
+          confidence: result.confidence,
+          reason: result.reason,
+          needsReview: result.confidence < 0.8
+        }
+      });
+    }
     
     return {
       category: result.category,
@@ -131,4 +177,40 @@ export async function classifyFaqCategory(faq: { question: string; answer: strin
       reviewReason: `処理エラー: ${error instanceof Error ? error.message : '不明なエラー'}`
     };
   }
+}
+
+export async function getCategoryMetrics(days: number = 30): Promise<CategoryMetrics> {
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+
+  const logs = await prisma.faqClassificationLog.findMany({
+    where: {
+      createdAt: {
+        gte: startDate
+      }
+    }
+  });
+
+  const categoryCount: Record<string, number> = {};
+  let totalConfidence = 0;
+  let needsReviewCount = 0;
+
+  logs.forEach(log => {
+    categoryCount[log.category] = (categoryCount[log.category] || 0) + 1;
+    totalConfidence += log.confidence;
+    if (log.needsReview) needsReviewCount++;
+  });
+
+  const lastReview = await prisma.faqClassificationLog.findFirst({
+    where: { reviewed: true },
+    orderBy: { reviewedAt: 'desc' }
+  });
+
+  return {
+    totalClassifications: logs.length,
+    categoryDistribution: categoryCount,
+    averageConfidence: logs.length > 0 ? totalConfidence / logs.length : 0,
+    reviewRate: logs.length > 0 ? needsReviewCount / logs.length : 0,
+    lastReviewDate: lastReview?.reviewedAt
+  };
 } 
