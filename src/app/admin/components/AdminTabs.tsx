@@ -7,7 +7,8 @@ export function AdminTabs({ activeTab, onTabChange }: AdminTabsProps) {
   const tabs = [
     { id: 'knowledge', label: 'ナレッジ管理' },
     { id: 'tags', label: 'タグ管理' },
-    { id: 'history', label: '返信履歴' }
+    { id: 'history', label: '返信履歴' },
+    { id: 'usage', label: '使用統計' }
   ] as const;
 
   return (

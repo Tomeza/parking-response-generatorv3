@@ -4,6 +4,7 @@ import { SearchResult } from './common-types';
 import kuromoji, { IpadicFeatures } from 'kuromoji';
 import { searchSimilarKnowledge } from './embeddings';
 import { rerankResults } from './anthropic';
+import { recordFaqUsage } from './usage-stats';
 
 // 結果に含めるKnowledgeモデルのカラムを選択
 const selectKnowledgeFields = {
@@ -82,6 +83,8 @@ async function simpleSearch(query: string, terms: string[]): Promise<SearchResul
 }
 
 export async function searchKnowledge(query: string, tags?: string): Promise<SearchResult[]> {
+  const startTime = Date.now();
+  let success = false;
   console.time('SK_Total'); // 関数全体の時間を計測開始
   const normalizedQuery = query.trim();
   const decodedTags = tags ? decodeURIComponent(tags) : '';

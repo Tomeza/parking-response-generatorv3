@@ -1,5 +1,7 @@
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
 
 // 日付を日本語フォーマットに変換する関数
 export function formatJapaneseDate(date: Date): string {
@@ -101,4 +103,8 @@ export function tokenizeJapanese(text: string): string[] {
     .replace(/[、。！？]/g, ' ')
     .split(/\s+/)
     .filter(token => token.length > 0);
+} 
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
 } 
