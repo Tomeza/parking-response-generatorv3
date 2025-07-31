@@ -1,0 +1,7 @@
+category,intent,tone,body,variables,importance,frequency,status
+capacity,restriction,formal,"お問い合わせありがとうございます。弊社の送迎サービスは安全上の理由から、1台につき最大{max_capacity}名様（お子様含む）までご利用いただけます。たとえ幼児を抱っこされていても、定員を超えるご乗車はできかねます。","{""max_capacity"":{""type"":""number"",""value"":5}}",5,20,draft
+parking,restriction,formal,"当駐車場は国内線ご利用のお客様専用となっております。国際線をご利用のお客様の駐車はお受けしておりませんので、ご理解のほどよろしくお願いいたします。","{}",5,18,draft
+parking,check,polite,"現在、普通車のネット予約は満車となっております。しかし、軽自動車の場合は、{inquiry_time}以降にお電話でお問い合わせいただければ、予約が可能な場合がございます。","{""inquiry_time"":{""type"":""string"",""value"":""21時""}}",4,12,draft
+shuttle,change,polite,"ご利用人数変更の際は、ご連絡ください。 ご来場お待ちしております。","{}",3,8,draft
+parking,check,polite,"ご希望の日程が満車の場合、その日は予約を受け付けることができません。予約は空き状況を確認した上での受付となりますので、満車の表示がある場合はご利用いただけません。","{""inquiry_time"":{""type"":""string"",""value"":""21時""}}",4,20,draft
+reservation,change,polite,"申し訳ありませんが、予約内容の確認や変更は直接{contact_methods}で行っていただく必要があります。ご来場時間をご用意のうえ、お知らせください。","{""contact_methods"":{""type"":""string"",""value"":""メールまたはお電話""}}",3,10,draft 

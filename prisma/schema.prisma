@@ -171,19 +171,19 @@ model KnowledgeQuestionVariation {
 }
 
 model FaqRaw {
-  id              Int                @id @default(autoincrement())
+  id              Int                    @id @default(autoincrement())
   question        String
   answer          String
+  embedding       Unsupported("vector")?
+  created_at      DateTime               @default(now()) @db.Timestamptz(3)
+  updated_at      DateTime               @default(now()) @db.Timestamptz(3)
   category        String?
   tags            String[]
   complexity      Int?
-  requires_review Boolean            @default(false)
+  requires_review Boolean                @default(false)
   review_reason   String?
-  embedding       Unsupported("vector")?
-  created_at      DateTime           @default(now()) @db.Timestamptz(3)
-  updated_at      DateTime           @default(now()) @db.Timestamptz(3)
-  usage_stats     FaqUsageStats[]
   reviews         FaqReviewHistory[]
+  faq_usage_stats FaqUsageStats[]
 
   @@map("faq_raw")
   @@schema("public")
@@ -192,9 +192,9 @@ model FaqRaw {
 model FaqReviewHistory {
   id             Int      @id @default(autoincrement())
   faqId          Int      @map("faq_id")
-  originalAnswer String   @map("original_answer")
-  refinedAnswer  String   @map("refined_answer")
-  reviewType     String   @map("review_type")
+  originalAnswer String
+  refinedAnswer  String
+  reviewType     String
   reviewer       String?
   reviewDate     DateTime @default(now()) @map("review_date")
   faq            FaqRaw   @relation(fields: [faqId], references: [id], onDelete: Cascade)
@@ -205,28 +205,29 @@ model FaqReviewHistory {
 
 model FaqReviewTriggers {
   id            Int      @id @default(autoincrement())
-  conditionType String   @map("condition_type")
+  conditionType String
   threshold     Json
-  isActive      Boolean  @default(true) @map("is_active")
+  isActive      Boolean  @default(true)
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @default(now()) @map("updated_at")
 
+  @@index([isActive])
   @@map("faq_review_triggers")
   @@schema("public")
 }
 
 model FaqUsageStats {
-  id         BigInt    @id @default(autoincrement())
-  faq        FaqRaw    @relation(fields: [faqId], references: [id], onDelete: Cascade)
-  faqId      Int
-  queryHash  String
-  usedAt     DateTime  @default(now()) @db.Timestamptz(3)
-  success    Boolean   @default(false)
-  route      String
-  latencyMs  Int
-  userId     String?
-  sessionId  String?
-  queryText  String
+  id        BigInt   @id @default(autoincrement())
+  faqId     Int
+  queryHash String
+  usedAt    DateTime @default(now()) @db.Timestamptz(3)
+  success   Boolean  @default(false)
+  route     String
+  latencyMs Int
+  userId    String?
+  sessionId String?
+  queryText String
+  faq_raw   FaqRaw   @relation(fields: [faqId], references: [id], onDelete: Cascade)
 
   @@index([faqId])
   @@index([queryHash])
@@ -236,7 +237,7 @@ model FaqUsageStats {
 }
 
 model FaqClassificationLog {
-  id          String    @id @default(cuid())
+  id          String    @id
   faqId       String
   category    String
   confidence  Float
@@ -245,10 +246,10 @@ model FaqClassificationLog {
   reviewed    Boolean   @default(false)
   reviewedAt  DateTime?
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  updatedAt   DateTime
 
-  @@index([faqId])
   @@index([category])
   @@index([createdAt])
+  @@index([faqId])
   @@schema("public")
 }

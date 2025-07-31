@@ -1,173 +1,197 @@
-import { serve } from "https://deno.land/std/http/server.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// エラーレスポンスの型定義
+interface ErrorResponse {
+  success: false;
+  error: {
+    code: string;
+    message: string;
+    details?: unknown;
+  };
+}
+
+// 成功レスポンスの型定義
+interface SuccessResponse {
+  success: true;
+  data: unknown[];
+}
+
+type APIResponse = ErrorResponse | SuccessResponse;
+
+// バリデーション用の定数
+const VALID_TONES = [
+  'formal', 'casual', 'strict', 'polite', 
+  'emergency', 'seasonal', 'informative'
+];
+
+// バリデーション関数
+function validateQueryParams(params: URLSearchParams): { isValid: boolean; error?: ErrorResponse } {
+  // カテゴリ/intent/toneの文字列長チェック
+  const category = params.get("category");
+  const intent = params.get("intent");
+  const tone = params.get("tone");
+
+  if (category && category.length > 50) {
+    return {
+      isValid: false,
+      error: {
+        success: false,
+        error: {
+          code: "INVALID_PARAMETER",
+          message: "Category name is too long (max 50 characters)",
+          details: { param: "category", value: category }
+        }
+      }
+    };
+  }
+
+  if (intent && intent.length > 50) {
+    return {
+      isValid: false,
+      error: {
+        success: false,
+        error: {
+          code: "INVALID_PARAMETER",
+          message: "Intent name is too long (max 50 characters)",
+          details: { param: "intent", value: intent }
+        }
+      }
+    };
+  }
+
+  if (tone) {
+    if (tone.length > 20) {
+      return {
+        isValid: false,
+        error: {
+          success: false,
+          error: {
+            code: "INVALID_PARAMETER",
+            message: "Tone name is too long (max 20 characters)",
+            details: { param: "tone", value: tone }
+          }
+        }
+      };
+    }
+
+    if (!VALID_TONES.includes(tone)) {
+      return {
+        isValid: false,
+        error: {
+          success: false,
+          error: {
+            code: "INVALID_TONE",
+            message: "Invalid tone specified",
+            details: {
+              param: "tone",
+              value: tone,
+              validTones: VALID_TONES
+            }
+          }
+        }
+      };
+    }
+  }
+
+  return { isValid: true };
+}
+
 serve(async (req) => {
-  // CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+  // CORS対応
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    // メソッドチェック
-    if (req.method !== "POST") {
-      return new Response("Method Not Allowed", { 
-        status: 405,
-        headers: { ...corsHeaders }
-      });
-    }
-
     // 認証チェック
-    const auth = req.headers.get("Authorization");
-    if (!auth) {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      throw {
+        code: "UNAUTHORIZED",
+        message: "Missing authorization header"
+      };
+    }
+
+    // クエリパラメータの取得とバリデーション
+    const url = new URL(req.url);
+    const validation = validateQueryParams(url.searchParams);
+    if (!validation.isValid && validation.error) {
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "Missing authorization header" 
-        }),
-        { 
-          status: 401,
-          headers: { 
-            'Content-Type': 'application/json',
-            ...corsHeaders
-          }
+        JSON.stringify(validation.error),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400
         }
       );
     }
 
-    // リクエストボディ取得
-    const { category, intent, language, tone } = await req.json();
-    
-    // 必須パラメータチェック
-    if (!category) {
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "Category is required" 
-        }),
-        { 
-          status: 400,
-          headers: { 
-            'Content-Type': 'application/json',
-            ...corsHeaders
-          }
-        }
-      );
-    }
+    const category = url.searchParams.get("category");
+    const intent = url.searchParams.get("intent");
+    const tone = url.searchParams.get("tone");
 
-    // 環境変数取得とデバッグ
-    const envVars = {
-      DB_URL: Deno.env.get("DB_URL"),
-      DB_ANON_KEY: Deno.env.get("DB_ANON_KEY"),
-      SUPABASE_URL: Deno.env.get("SUPABASE_URL"),
-      SUPABASE_ANON_KEY: Deno.env.get("SUPABASE_ANON_KEY")
-    };
+    // Supabaseクライアントの初期化
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      {
+        global: { headers: { Authorization: authHeader } },
+      }
+    );
 
-    console.log("Environment variables:", {
-      ...envVars,
-      DB_ANON_KEY: envVars.DB_ANON_KEY ? "present" : "missing",
-      SUPABASE_ANON_KEY: envVars.SUPABASE_ANON_KEY ? "present" : "missing"
-    });
-
-    if (!envVars.DB_URL || !envVars.DB_ANON_KEY) {
-      console.error("Missing required environment variables");
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "Server configuration error",
-          details: "Missing database configuration",
-          debug: {
-            DB_URL: !!envVars.DB_URL,
-            DB_ANON_KEY: !!envVars.DB_ANON_KEY
-          }
-        }),
-        { 
-          status: 500,
-          headers: { 
-            'Content-Type': 'application/json',
-            ...corsHeaders
-          }
-        }
-      );
-    }
-
-    // Supabaseクライアント初期化
-    const supabase = createClient(envVars.DB_URL, envVars.DB_ANON_KEY);
-
-    console.log("Querying templates with params:", { category, intent, language, tone });
-
-    // クエリ構築
-    let query = supabase.from("templates")
+    // クエリの構築
+    let query = supabaseClient
+      .from("templates")
       .select("*")
-      .eq("category", category)
-      .eq("language", language ?? "ja");
-    
+      .eq("status", "approved");
+
+    if (category) query = query.eq("category", category);
     if (intent) query = query.eq("intent", intent);
     if (tone) query = query.eq("tone", tone);
 
-    // 実行（重要度・頻度順）
-    const { data, error } = await query
-      .order("importance", { ascending: false })
-      .order("frequency", { ascending: false })
-      .limit(3);
+    // データの取得
+    const { data, error } = await query;
 
+    // エラーハンドリング
     if (error) {
-      console.error("Query error:", error);
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: error.message,
-          details: error
-        }),
-        { 
-          status: 400,
-          headers: { 
-            'Content-Type': 'application/json',
-            ...corsHeaders
-          }
-        }
-      );
+      console.error("Database error:", error);
+      throw {
+        code: "DATABASE_ERROR",
+        message: "Failed to fetch templates",
+        details: error
+      };
     }
 
-    console.log("Query successful, found templates:", data?.length ?? 0);
-
-    // レスポンス
+    // 成功レスポンス
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        templates: data ?? [],
-        meta: {
-          count: data?.length ?? 0,
-          filters: { category, intent, language, tone }
-        }
-      }),
+      JSON.stringify({ success: true, data: data || [] }),
       {
-        headers: { 
-          'Content-Type': 'application/json',
-          ...corsHeaders
-        },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       }
     );
 
-  } catch (e) {
-    console.error("Server error:", e);
+  } catch (error) {
+    // エラーレスポンス
+    const errorResponse: ErrorResponse = {
+      success: false,
+      error: {
+        code: error.code || "INTERNAL_ERROR",
+        message: error.message || "An unexpected error occurred",
+        details: error.details
+      }
+    };
+
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: "Internal Server Error",
-        details: e.message 
-      }),
-      { 
-        status: 500,
-        headers: { 
-          'Content-Type': 'application/json',
-          ...corsHeaders
-        }
+      JSON.stringify(errorResponse),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: error.code === "UNAUTHORIZED" ? 401 : 500,
       }
     );
   }

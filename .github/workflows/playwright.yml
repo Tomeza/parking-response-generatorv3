@@ -1,0 +1,450 @@
+name: Playwright E2E Tests
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'src/**'
+      - 'e2e/**'
+      - 'supabase/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'playwright.config.ts'
+      - 'next.config.js'
+      - '.env*'
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 2 * * 1' # 毎週月曜02:00(JST 11:00)
+
+env:
+  SUPABASE_DB_PASSWORD: postgres
+  NODE_ENV: test
+  NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+  PLAYWRIGHT_TEST_TIMEOUT: 90000
+  PLAYWRIGHT_WORKERS: 4
+  PLAYWRIGHT_RETRIES: 2
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      deps-cache-hit: ${{ steps.cache-deps.outputs.cache-hit }}
+      playwright-cache-hit: ${{ steps.playwright-cache.outputs.cache-hit }}
+      nextjs-cache-hit: ${{ steps.nextjs-cache.outputs.cache-hit }}
+      supabase-cache-hit: ${{ steps.supabase-cache.outputs.cache-hit }}
+      job-start-time: ${{ steps.start-time.outputs.time }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Record job start time
+        id: start-time
+        run: echo "time=$(date +%s)" >> $GITHUB_OUTPUT
+
+      # Node.jsのセットアップ（npmキャッシュ含む）
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # 依存パッケージのキャッシュ（詳細な粒度）
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        id: cache-deps
+        with:
+          path: |
+            node_modules
+            ~/.cache/ms-playwright
+            .next/cache
+            .supabase
+          key: ${{ runner.os }}-deps-${{ hashFiles('package-lock.json', 'next.config.js', 'playwright.config.ts', 'supabase/migrations/**') }}
+          restore-keys: |
+            ${{ runner.os }}-deps-${{ hashFiles('package-lock.json') }}-
+            ${{ runner.os }}-deps-
+
+      # Playwrightブラウザバイナリの個別キャッシュ
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      # Next.jsビルドキャッシュの個別キャッシュ
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        id: nextjs-cache
+        with:
+          path: |
+            .next/cache
+            public/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('next.config.js', 'package-lock.json', 'src/**/*.ts', 'src/**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-
+
+      # Supabaseのキャッシュ（マイグレーションファイルに基づく）
+      - name: Cache Supabase
+        uses: actions/cache@v4
+        id: supabase-cache
+        with:
+          path: .supabase
+          key: ${{ runner.os }}-supabase-${{ hashFiles('supabase/migrations/**', 'supabase/seed.sql') }}
+          restore-keys: |
+            ${{ runner.os }}-supabase-
+
+      # 依存パッケージのインストール（キャッシュmiss時のみ）
+      - name: Install dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      # Supabase CLIのインストール
+      - name: Install Supabase CLI
+        run: npm i -g supabase
+
+  test-basic:
+    needs: setup
+    runs-on: ubuntu-latest
+    outputs:
+      test-duration: ${{ steps.test-time.outputs.duration }}
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: ${{ env.SUPABASE_DB_PASSWORD }}
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # キャッシュの復元（全て）
+      - name: Restore all caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.cache/ms-playwright
+            .next/cache
+            public/.next/cache
+            .supabase
+          key: ${{ runner.os }}-deps-${{ hashFiles('package-lock.json', 'next.config.js', 'playwright.config.ts', 'supabase/migrations/**') }}
+          restore-keys: |
+            ${{ runner.os }}-deps-${{ hashFiles('package-lock.json') }}-
+            ${{ runner.os }}-deps-
+
+      # テスト実行時間の計測開始
+      - name: Record test start time
+        id: test-start
+        run: echo "start_time=$(date +%s)" >> $GITHUB_OUTPUT
+
+      # Supabase環境の準備（キャッシュ利用）
+      - name: Start Supabase
+        run: |
+          if [ -d ".supabase" ]; then
+            echo "Using cached Supabase environment"
+            supabase start
+          else
+            echo "Setting up fresh Supabase environment"
+            supabase start
+            supabase db reset --db-url postgresql://postgres:${{ env.SUPABASE_DB_PASSWORD }}@localhost:5432/postgres
+          fi
+
+      # Next.jsアプリのビルド（キャッシュ利用）
+      - name: Build Next.js app
+        run: |
+          if [ -d ".next/cache" ]; then
+            echo "Using cached Next.js build"
+            NEXT_TELEMETRY_DISABLED=1 npm run build
+          else
+            echo "Fresh Next.js build"
+            NEXT_TELEMETRY_DISABLED=1 npm run build
+          fi
+
+      - name: Run basic tests
+        run: |
+          npx playwright test e2e/template-history.spec.ts --workers=${PLAYWRIGHT_WORKERS}
+
+      # テスト実行時間の計測終了と記録
+      - name: Calculate test duration
+        id: test-time
+        run: |
+          end_time=$(date +%s)
+          start_time=${{ steps.test-start.outputs.start_time }}
+          duration=$((end_time - start_time))
+          echo "duration=$duration" >> $GITHUB_OUTPUT
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: basic-test-results
+          path: playwright-report/
+          retention-days: 30
+
+  test-edge-cases:
+    needs: test-basic
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    outputs:
+      test-duration: ${{ steps.test-time.outputs.duration }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # キャッシュの復元（全て）
+      - name: Restore all caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.cache/ms-playwright
+            .next/cache
+            public/.next/cache
+            .supabase
+          key: ${{ runner.os }}-deps-${{ hashFiles('package-lock.json', 'next.config.js', 'playwright.config.ts', 'supabase/migrations/**') }}
+          restore-keys: |
+            ${{ runner.os }}-deps-${{ hashFiles('package-lock.json') }}-
+            ${{ runner.os }}-deps-
+
+      # テスト実行時間の計測開始
+      - name: Record test start time
+        id: test-start
+        run: echo "start_time=$(date +%s)" >> $GITHUB_OUTPUT
+
+      # Supabase環境の準備（キャッシュ利用）
+      - name: Start Supabase
+        run: |
+          if [ -d ".supabase" ]; then
+            echo "Using cached Supabase environment"
+            supabase start
+          else
+            echo "Setting up fresh Supabase environment"
+            supabase start
+            supabase db reset --db-url postgresql://postgres:${{ env.SUPABASE_DB_PASSWORD }}@localhost:5432/postgres
+          fi
+
+      - name: Run edge case tests
+        run: |
+          PLAYWRIGHT_TEST_TIMEOUT=180000 npx playwright test e2e/template-history.edge-cases.spec.ts --workers=${PLAYWRIGHT_WORKERS}
+
+      # テスト実行時間の計測終了と記録
+      - name: Calculate test duration
+        id: test-time
+        run: |
+          end_time=$(date +%s)
+          start_time=${{ steps.test-start.outputs.start_time }}
+          duration=$((end_time - start_time))
+          echo "duration=$duration" >> $GITHUB_OUTPUT
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: edge-case-test-results
+          path: playwright-report/
+          retention-days: 30
+
+  test-concurrent:
+    needs: test-basic
+    runs-on: ubuntu-latest
+    outputs:
+      test-duration: ${{ steps.test-time.outputs.duration }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # キャッシュの復元（全て）
+      - name: Restore all caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.cache/ms-playwright
+            .next/cache
+            public/.next/cache
+            .supabase
+          key: ${{ runner.os }}-deps-${{ hashFiles('package-lock.json', 'next.config.js', 'playwright.config.ts', 'supabase/migrations/**') }}
+          restore-keys: |
+            ${{ runner.os }}-deps-${{ hashFiles('package-lock.json') }}-
+            ${{ runner.os }}-deps-
+
+      # テスト実行時間の計測開始
+      - name: Record test start time
+        id: test-start
+        run: echo "start_time=$(date +%s)" >> $GITHUB_OUTPUT
+
+      # Supabase環境の準備（キャッシュ利用）
+      - name: Start Supabase
+        run: |
+          if [ -d ".supabase" ]; then
+            echo "Using cached Supabase environment"
+            supabase start
+          else
+            echo "Setting up fresh Supabase environment"
+            supabase start
+            supabase db reset --db-url postgresql://postgres:${{ env.SUPABASE_DB_PASSWORD }}@localhost:5432/postgres
+          fi
+
+      - name: Run concurrent tests
+        run: |
+          PLAYWRIGHT_WORKERS=8 npx playwright test e2e/template-history.concurrent.spec.ts
+
+      # テスト実行時間の計測終了と記録
+      - name: Calculate test duration
+        id: test-time
+        run: |
+          end_time=$(date +%s)
+          start_time=${{ steps.test-start.outputs.start_time }}
+          duration=$((end_time - start_time))
+          echo "duration=$duration" >> $GITHUB_OUTPUT
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: concurrent-test-results
+          path: playwright-report/
+          retention-days: 30
+
+  test-performance:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test-basic, test-edge-cases, test-concurrent]
+    runs-on: ubuntu-latest
+    outputs:
+      test-duration: ${{ steps.test-time.outputs.duration }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # キャッシュの復元（全て）
+      - name: Restore all caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.cache/ms-playwright
+            .next/cache
+            public/.next/cache
+            .supabase
+          key: ${{ runner.os }}-deps-${{ hashFiles('package-lock.json', 'next.config.js', 'playwright.config.ts', 'supabase/migrations/**') }}
+          restore-keys: |
+            ${{ runner.os }}-deps-${{ hashFiles('package-lock.json') }}-
+            ${{ runner.os }}-deps-
+
+      # テスト実行時間の計測開始
+      - name: Record test start time
+        id: test-start
+        run: echo "start_time=$(date +%s)" >> $GITHUB_OUTPUT
+
+      # Supabase環境の準備（キャッシュ利用）
+      - name: Start Supabase
+        run: |
+          if [ -d ".supabase" ]; then
+            echo "Using cached Supabase environment"
+            supabase start
+          else
+            echo "Setting up fresh Supabase environment"
+            supabase start
+            supabase db reset --db-url postgresql://postgres:${{ env.SUPABASE_DB_PASSWORD }}@localhost:5432/postgres
+          fi
+
+      - name: Run performance tests
+        run: |
+          npx playwright test e2e/template-history.performance.spec.ts --workers=1
+
+      # テスト実行時間の計測終了と記録
+      - name: Calculate test duration
+        id: test-time
+        run: |
+          end_time=$(date +%s)
+          start_time=${{ steps.test-start.outputs.start_time }}
+          duration=$((end_time - start_time))
+          echo "duration=$duration" >> $GITHUB_OUTPUT
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-test-results
+          path: |
+            playwright-report/
+            performance-results/
+          retention-days: 30
+
+      - name: Generate performance report
+        run: |
+          echo "## Performance Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "### Key Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "- Initial Load Time: $(cat performance-results/metrics.json | jq '.initialLoadTime')" >> $GITHUB_STEP_SUMMARY
+          echo "- Average Response Time: $(cat performance-results/metrics.json | jq '.avgResponseTime')" >> $GITHUB_STEP_SUMMARY
+          echo "- Memory Usage: $(cat performance-results/metrics.json | jq '.memoryUsage')" >> $GITHUB_STEP_SUMMARY
+
+  notify:
+    needs: [setup, test-basic, test-edge-cases, test-concurrent, test-performance]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate cache report
+        run: |
+          echo "## Cache Status Report" >> $GITHUB_STEP_SUMMARY
+          echo "### Cache Hit Status" >> $GITHUB_STEP_SUMMARY
+          echo "- Dependencies: ${{ needs.setup.outputs.deps-cache-hit == 'true' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Playwright: ${{ needs.setup.outputs.playwright-cache-hit == 'true' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Next.js: ${{ needs.setup.outputs.nextjs-cache-hit == 'true' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Supabase: ${{ needs.setup.outputs.supabase-cache-hit == 'true' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### Test Duration" >> $GITHUB_STEP_SUMMARY
+          echo "- Basic Tests: ${{ needs.test-basic.outputs.test-duration }}s" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check test results
+        run: |
+          if [ "${{ needs.test-basic.result }}" != "success" ] || \
+             [ "${{ needs.test-edge-cases.result }}" != "success" ] || \
+             [ "${{ needs.test-concurrent.result }}" != "success" ] || \
+             [ "${{ needs.test-performance.result }}" != "success" ]; then
+            echo "::error::Some tests failed. Check the test reports for details."
+            exit 1
+          fi
+
+      - name: Notify test results
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+          text: |
+            *Cache Status*
+            • Dependencies: ${{ needs.setup.outputs.deps-cache-hit == 'true' && '✅' || '❌' }}
+            • Playwright: ${{ needs.setup.outputs.playwright-cache-hit == 'true' && '❌' || '✅' }}
+            • Next.js: ${{ needs.setup.outputs.nextjs-cache-hit == 'true' && '✅' || '❌' }}
+            • Supabase: ${{ needs.setup.outputs.supabase-cache-hit == 'true' && '✅' || '❌' }}
+            
+            *Test Duration*
+            • Basic Tests: ${{ needs.test-basic.outputs.test-duration }}s
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        if: env.SLACK_WEBHOOK_URL != '' 

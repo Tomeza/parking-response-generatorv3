@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { ChatOpenAI } from '@langchain/openai';
 import { PromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
+import { createHash } from 'crypto';
 
 const prisma = new PrismaClient();
 const llm = new ChatOpenAI({
@@ -58,25 +59,30 @@ const qualityCheckPrompt = PromptTemplate.fromTemplate(`
 }
 `);
 
+// クエリハッシュ生成関数
+function generateQueryHash(text: string = ''): string {
+  return createHash('sha256').update(text).digest('hex');
+}
+
 export class FaqReviewManager {
   // 複雑度の評価
   static async evaluateComplexity(question: string, answer: string): Promise<number> {
-    const chain = complexityPrompt.pipe(llm).pipe(new StringOutputParser());
-    const result = await chain.invoke({
+    const prompt = await complexityPrompt.format({
       question,
       answer
     });
-    return parseInt(result.trim());
+    const response = await llm.predict(prompt);
+    return parseInt(response.trim());
   }
 
   // 品質チェック
   static async checkQuality(question: string, answer: string): Promise<any> {
-    const chain = qualityCheckPrompt.pipe(llm).pipe(new StringOutputParser());
-    const result = await chain.invoke({
+    const prompt = await qualityCheckPrompt.format({
       question,
       answer
     });
-    return JSON.parse(result);
+    const response = await llm.predict(prompt);
+    return JSON.parse(response);
   }
 
   // レビュートリガーの確認
@@ -87,7 +93,7 @@ export class FaqReviewManager {
     // FAQの情報を取得
     const faq = await prisma.faqRaw.findUnique({
       where: { id: faqId },
-      include: { usageStats: true }
+      include: { usage_stats: true }
     });
 
     if (!faq) {
@@ -113,48 +119,43 @@ export class FaqReviewManager {
           break;
 
         case 'feedback':
-          if (faq.usageStats?.feedbackNegative >= threshold.negative_count) {
-            const timeframe = new Date();
-            timeframe.setHours(timeframe.getHours() - threshold.timeframe_hours);
-            
-            // 期間内の否定的フィードバック数を確認
-            const recentNegativeFeedback = await prisma.faqUsageStats.count({
-              where: {
-                faqId,
-                feedbackNegative: { gt: 0 },
-                updatedAt: { gte: timeframe }
-              }
-            });
-
-            if (recentNegativeFeedback >= threshold.negative_count) {
-              return {
-                requiresReview: true,
-                reason: `否定的フィードバックが多い (${recentNegativeFeedback}件)`
-              };
+          const timeframe = new Date();
+          timeframe.setHours(timeframe.getHours() - threshold.timeframe_hours);
+          
+          // 期間内の否定的フィードバック数を確認
+          const recentNegativeFeedback = await prisma.faqUsageStats.count({
+            where: {
+              faqId,
+              success: false,
+              usedAt: { gte: timeframe }
             }
+          });
+
+          if (recentNegativeFeedback >= threshold.negative_count) {
+            return {
+              requiresReview: true,
+              reason: `否定的フィードバックが多い (${recentNegativeFeedback}件)`
+            };
           }
           break;
 
         case 'usage_frequency':
-          if (faq.usageStats?.queryCount >= threshold.min_queries) {
-            const timeframe = new Date();
-            timeframe.setDate(timeframe.getDate() - threshold.timeframe_days);
-            
-            // 期間内の使用回数を確認
-            const recentQueryCount = await prisma.faqUsageStats.count({
-              where: {
-                faqId,
-                queryCount: { gt: 0 },
-                updatedAt: { gte: timeframe }
-              }
-            });
-
-            if (recentQueryCount >= threshold.min_queries) {
-              return {
-                requiresReview: true,
-                reason: `使用頻度が高い (${recentQueryCount}回)`
-              };
+          const timeframe2 = new Date();
+          timeframe2.setDate(timeframe2.getDate() - threshold.timeframe_days);
+          
+          // 期間内の使用回数を確認
+          const recentQueryCount = await prisma.faqUsageStats.count({
+            where: {
+              faqId,
+              usedAt: { gte: timeframe2 }
             }
+          });
+
+          if (recentQueryCount >= threshold.min_queries) {
+            return {
+              requiresReview: true,
+              reason: `使用頻度が高い (${recentQueryCount}回)`
+            };
           }
           break;
       }
@@ -165,20 +166,14 @@ export class FaqReviewManager {
 
   // 使用統計の更新
   static async updateUsageStats(faqId: number, feedback?: 'positive' | 'negative'): Promise<void> {
-    await prisma.faqUsageStats.upsert({
-      where: { faqId },
-      create: {
+    await prisma.faqUsageStats.create({
+      data: {
         faqId,
-        queryCount: 1,
-        feedbackPositive: feedback === 'positive' ? 1 : 0,
-        feedbackNegative: feedback === 'negative' ? 1 : 0,
-        lastUsedAt: new Date()
-      },
-      update: {
-        queryCount: { increment: 1 },
-        feedbackPositive: feedback === 'positive' ? { increment: 1 } : undefined,
-        feedbackNegative: feedback === 'negative' ? { increment: 1 } : undefined,
-        lastUsedAt: new Date()
+        queryHash: generateQueryHash(),
+        queryText: "",
+        route: "review",
+        latencyMs: 0,
+        success: feedback === 'positive'
       }
     });
 
@@ -188,8 +183,8 @@ export class FaqReviewManager {
       await prisma.faqRaw.update({
         where: { id: faqId },
         data: {
-          requiresReview: true,
-          reviewReason: reason
+          requires_review: true,
+          review_reason: reason
         }
       });
     }
@@ -217,8 +212,8 @@ export class FaqReviewManager {
     await prisma.faqRaw.update({
       where: { id: faqId },
       data: {
-        requiresReview: false,
-        reviewReason: null
+        requires_review: false,
+        review_reason: null
       }
     });
   }

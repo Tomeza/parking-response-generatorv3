@@ -1,0 +1,342 @@
+{
+  "timestamp": "2025-07-26T07:34:24.141Z",
+  "totalQueries": 10,
+  "averageMetrics": {
+    "responseTime": {
+      "raw": 6259.5,
+      "refined": 5819.7
+    },
+    "tokenCount": {
+      "raw": 2.2,
+      "refined": 2.3
+    },
+    "quality": {
+      "raw": {
+        "accuracy": 5,
+        "completeness": 5,
+        "clarity": 5,
+        "consistency": 5,
+        "naturalness": 5
+      },
+      "refined": {
+        "accuracy": 5,
+        "completeness": 5,
+        "clarity": 5,
+        "consistency": 5,
+        "naturalness": 5
+      }
+    }
+  },
+  "detailedResults": [
+    {
+      "query": "駐車場の予約方法を教えてください",
+      "rawResponse": "ウェブサイトにアクセスし、希望の駐車場を検索します。その後、利用日時を選択し、予約内容を確認します。お支払い情報を入力した後、予約完了メールを確認します。なお、ご予約は24時間前までにお願いしています。",
+      "refinedResponse": "駐車場の予約は以下の手順で行えます：\n1. まず、当社のウェブサイトにアクセスしてください。\n2. 次に、必要な駐車場を検索します。\n3. 利用予定の日時を選択します。\n4. その後、予約詳細を確認してください。\n5. 支払い情報を入力します。\n6. 最後に、予約完了のメールを確認します。\n\nなお、ご予約は利用日の24時間前までに行っていただくようお願い申し上げます。",
+      "metrics": {
+        "responseTime": {
+          "raw": 3891,
+          "refined": 7567
+        },
+        "tokenCount": {
+          "raw": 1,
+          "refined": 7
+        },
+        "quality": {
+          "raw": {
+            "accuracy": 5,
+            "completeness": 5,
+            "clarity": 5,
+            "consistency": 5,
+            "naturalness": 5
+          },
+          "refined": {
+            "accuracy": 5,
+            "completeness": 5,
+            "clarity": 5,
+            "consistency": 5,
+            "naturalness": 5
+          }
+        }
+      }
+    },
+    {
+      "query": "キャンセルはいつまでできますか",
+      "rawResponse": "キャンセルは利用開始時間の6時間前まで可能です。",
+      "refinedResponse": "サービスのキャンセルは、開始時間の6時間前まで無料で可能です。",
+      "metrics": {
+        "responseTime": {
+          "raw": 1571,
+          "refined": 1374
+        },
+        "tokenCount": {
+          "raw": 1,
+          "refined": 1
+        },
+        "quality": {
+          "raw": {
+            "accuracy": 5,
+            "completeness": 5,
+            "clarity": 5,
+            "consistency": 5,
+            "naturalness": 5
+          },
+          "refined": {
+            "accuracy": 5,
+            "completeness": 5,
+            "clarity": 5,
+            "consistency": 5,
+            "naturalness": 5
+          }
+        }
+      }
+    },
+    {
+      "query": "支払い方法は何がありますか",
+      "rawResponse": "以下の支払い方法をご利用いただけます：\n・クレジットカード（VISA、Mastercard、JCB、American Express）\n・PayPay\n・LINE Pay\n・d払い\nですが、現金でのお支払いは受け付けておりません。",
+      "refinedResponse": "ご利用いただける支払い方法は、各種クレジットカード（VISA、Mastercard、JCB、American Express）と、各種電子決済（PayPay、LINE Pay、d払い）がございます。ただし、現金でのお支払いは承っておりません。",
+      "metrics": {
+        "responseTime": {
+          "raw": 3130,
+          "refined": 3588
+        },
+        "tokenCount": {
+          "raw": 3,
+          "refined": 3
+        },
+        "quality": {
+          "raw": {
+            "accuracy": 5,
+            "completeness": 5,
+            "clarity": 5,
+            "consistency": 5,
+            "naturalness": 5
+          },
+          "refined": {
+            "accuracy": 5,
+            "completeness": 5,
+            "clarity": 5,
+            "consistency": 5,
+            "naturalness": 5
+          }
+        }
+      }
+    },
+    {
+      "query": "予約の変更は可能ですか",
+      "rawResponse": "はい、予約の変更は可能です。ただし、変更は利用開始時間の12時間前までとなっております。また、変更は予約確認メールのリンクまたはマイページから行うことができます。しかし、ご希望の時間に変更できない場合があるかもしれませんので、その点はご了承ください。",
+      "refinedResponse": "はい、予約の変更は可能です。ただし、開始時間の12時間前までに行い、予約確認メールのリンクまたはマイページから変更することが必要です。また、空き状況により、希望の時間に変更できないこともありますのでご了承ください。",
+      "metrics": {
+        "responseTime": {
+          "raw": 4910,
+          "refined": 4725
+        },
+        "tokenCount": {
+          "raw": 1,
+          "refined": 1
+        },
+        "quality": {
+          "raw": {
+            "accuracy": 5,
+            "completeness": 5,
+            "clarity": 5,
+            "consistency": 5,
+            "naturalness": 5
+          },
+          "refined": {
+            "accuracy": 5,
+            "completeness": 5,
+            "clarity": 5,
+            "consistency": 5,
+            "naturalness": 5
+          }
+        }
+      }
+    },
+    {
+      "query": "領収書は発行できますか",
+      "rawResponse": "はい、領収書の発行が可能です。予約完了後、マイページの「領収書発行」ボタンから、PDFまたは紙での領収書を発行できます。また、宛名や但し書きの変更も可能です。",
+      "refinedResponse": "はい、領収書の発行が可能です。予約完了後、マイページの「領収書発行」から、PDFまたは紙の領収書を取得できます。また、宛名や但し書きの変更も可能です。",
+      "metrics": {
+        "responseTime": {
+          "raw": 3141,
+          "refined": 3649
+        },
+        "tokenCount": {
+          "raw": 1,
+          "refined": 1
+        },
+        "quality": {
+          "raw": {
+            "accuracy": 5,
+            "completeness": 5,
+            "clarity": 5,
+            "consistency": 5,
+            "naturalness": 5
+          },
+          "refined": {
+            "accuracy": 5,
+            "completeness": 5,
+            "clarity": 5,
+            "consistency": 5,
+            "naturalness": 5
+          }
+        }
+      }
+    },
+    {
+      "query": "予約した駐車場に入れない場合はどうすればいいですか",
+      "rawResponse": "予約した駐車場に入れない場合、以下の手順に従って対応してください：\n\n1. 駐車場入口に記載の緊急連絡先（24時間対応）にご連絡ください。\n2. その際、オペレーターに予約番号と状況をお伝えください。\n3. 係員が現地で対応、または代替駐車場をご案内します。\n\nただし、システム障害の場合は、利用料金は後日全額返金されます。一方、お客様都合（車両サイズ超過など）の場合は返金対象外となりますので、予約時には車両サイズ制限を確認するようにしてください。",
+      "refinedResponse": "予約した駐車場に入れない場合は、以下の手順に従って対応してください。\n\n1. 駐車場入口に掲示されている緊急連絡先へご連絡ください。\n2. 予約番号と現状をオペレーターに伝えてください。\n3. スタッフが対応し、必要に応じて代替駐車場をご案内します。\n\nこれらの手順に従っていただくことでスムーズに対応することができます。",
+      "metrics": {
+        "responseTime": {
+          "raw": 10236,
+          "refined": 5657
+        },
+        "tokenCount": {
+          "raw": 4,
+          "refined": 4
+        },
+        "quality": {
+          "raw": {
+            "accuracy": 5,
+            "completeness": 5,
+            "clarity": 5,
+            "consistency": 5,
+            "naturalness": 5
+          },
+          "refined": {
+            "accuracy": 5,
+            "completeness": 5,
+            "clarity": 5,
+            "consistency": 5,
+            "naturalness": 5
+          }
+        }
+      }
+    },
+    {
+      "query": "台風や大雨の場合のキャンセルについて教えてください",
+      "rawResponse": "台風や大雨などの気象警報が発令された場合、以下の条件で無料でキャンセルすることができます：\n・利用予定時間帯に、利用駐車場エリアで警報（大雨、暴風、特別警報等）が発令されている場合\n・利用予定時間帯に、利用駐車場エリアで避難指示が発令されている場合\n\n以下の手続き方法でキャンセルを行い、警報の発令状況を確認後、自動的にキャンセル料金が無料となります：\n1. マイページまたは予約確認メールからキャンセル手続き\n2. キャンセルフォームの「理由選択」で「警報発令」を選択\n\nただし、警報解除後のキャンセルは通常のキャンセル規定が適用されますのでご注意ください。",
+      "refinedResponse": "台風や大雨等、予定利用時間に駐車場エリアで警報が発令された場合は無料でキャンセルすることができます。キャンセル手続きは、マイページまたは予約確認メールから行い、「警報発令」を選択します。その後、警報の発令状況を確認後、キャンセル料が自動的に無料になります。なお、警報解除後のキャンセルは通常の規定が適用されます。",
+      "metrics": {
+        "responseTime": {
+          "raw": 12569,
+          "refined": 5892
+        },
+        "tokenCount": {
+          "raw": 3,
+          "refined": 1
+        },
+        "quality": {
+          "raw": {
+            "accuracy": 5,
+            "completeness": 5,
+            "clarity": 5,
+            "consistency": 5,
+            "naturalness": 5
+          },
+          "refined": {
+            "accuracy": 5,
+            "completeness": 5,
+            "clarity": 5,
+            "consistency": 5,
+            "naturalness": 5
+          }
+        }
+      }
+    },
+    {
+      "query": "予約した時間に遅れそうな場合はどうすればいいですか",
+      "rawResponse": "遅れる時間によって対応が異なります。\n\nもし30分以内の遅れであれば、マイページから遅延申請を行うことができ、追加料金なしで利用時間を30分延長できます。\n\n30分以上の遅延が見込まれる場合は、カスタマーサポートに電話で連絡し、予約番号をお伝えください。その後、空き状況により予約時間の変更を案内します。ただし、変更できない場合は通常のキャンセル規定が適用されます。\n\nまた、事前に連絡なく30分以上遅れた場合、予約は自動キャンセルとなり、キャンセル料金が発生しますので注意してください。",
+      "refinedResponse": "遅刻の時間によって対応が異なります。\n\n遅刻が30分以内であれば、マイページから遅刻を申告してください。その場合、追加料金なしで30分まで予約時間を延長することが可能です。\n\nもし、遅刻が30分以上になる場合は、カスタマーサポートに電話して予約番号を伝えてください。その後、空き状況に応じて予約時間の変更を提案します。ただし、変更が不可能な場合は通常のキャンセルポリシーが適用されます。\n\nなお、事前に連絡せずに30分以上遅刻すると予約は自動的にキャンセルされ、キャンセル料が発生しますのでご注意ください。",
+      "metrics": {
+        "responseTime": {
+          "raw": 9305,
+          "refined": 6594
+        },
+        "tokenCount": {
+          "raw": 1,
+          "refined": 1
+        },
+        "quality": {
+          "raw": {
+            "accuracy": 5,
+            "completeness": 5,
+            "clarity": 5,
+            "consistency": 5,
+            "naturalness": 5
+          },
+          "refined": {
+            "accuracy": 5,
+            "completeness": 5,
+            "clarity": 5,
+            "consistency": 5,
+            "naturalness": 5
+          }
+        }
+      }
+    },
+    {
+      "query": "月極駐車場への切り替えは可能ですか",
+      "rawResponse": "はい、可能です。ただし、以下の条件を満たしている必要があります：\n\n・同一駐車場で3ヶ月以上の継続利用実績\n・月極の空き区画があること\n・身分証明書と車検証の提出\n・保証金の支払い（1ヶ月分の月極料金）\n\nまた、申込手順は以下の通りです：\n\n1. マイページから月極切り替え申請\n2. 審査（約3営業日）\n3. 契約書類の郵送\n4. 契約書返送と保証金のお支払い\n5. 月極利用開始\n\nなお、法人契約の場合は、別途ご相談ください。",
+      "refinedResponse": "はい、可能です。ただし、以下の条件を満たしている必要があります：\n\n・同一駐車場を3ヶ月以上利用していること\n・月極の利用可能スペースが存在すること\n・身分証明書と車検証の提出\n・1ヶ月分の月極料金の保証金の支払い\n\n以上の条件を満たすことで、時間貸し駐車場から月極駐車場への変更が可能になります。変更の申請はマイページから行い、審査後に契約書類の郵送と保証金の支払いを行うことで、月極利用が開始されます。",
+      "metrics": {
+        "responseTime": {
+          "raw": 10231,
+          "refined": 9908
+        },
+        "tokenCount": {
+          "raw": 6,
+          "refined": 1
+        },
+        "quality": {
+          "raw": {
+            "accuracy": 5,
+            "completeness": 5,
+            "clarity": 5,
+            "consistency": 5,
+            "naturalness": 5
+          },
+          "refined": {
+            "accuracy": 5,
+            "completeness": 5,
+            "clarity": 5,
+            "consistency": 5,
+            "naturalness": 5
+          }
+        }
+      }
+    },
+    {
+      "query": "電気自動車の充電設備がある駐車場を探したいのですが",
+      "rawResponse": "通常の駐車場検索画面で「詳細条件」をクリックし、「設備・オプション」から「EV充電」にチェックを入れて検索してください。ただし、充電設備は車種によって利用できるものとできないものがありますので、予約時に必ず対応車種をご確認ください。",
+      "refinedResponse": "以下の手順で検索できます。\n1. 駐車場検索画面で「詳細条件」を選択します。\n2. 「設備・オプション」から「EV充電」を選択します。\n\nただし、車種によっては利用できない充電設備もあるため、予約時に対応車種を確認してください。また、充電スペースの予約が必要で、充電ケーブルは標準装備されています。また、他車の充電完了後30分以上放置すると追加料金が発生しますのでご注意ください。なお、充電トラブル時は24時間サポートが対応します。",
+      "metrics": {
+        "responseTime": {
+          "raw": 3611,
+          "refined": 9243
+        },
+        "tokenCount": {
+          "raw": 1,
+          "refined": 3
+        },
+        "quality": {
+          "raw": {
+            "accuracy": 5,
+            "completeness": 5,
+            "clarity": 5,
+            "consistency": 5,
+            "naturalness": 5
+          },
+          "refined": {
+            "accuracy": 5,
+            "completeness": 5,
+            "clarity": 5,
+            "consistency": 5,
+            "naturalness": 5
+          }
+        }
+      }
+    }
+  ]
+}
