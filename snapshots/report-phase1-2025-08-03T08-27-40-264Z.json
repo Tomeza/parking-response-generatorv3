@@ -1,0 +1,16 @@
+{
+  "timestamp": "2025-08-03T08-27-40-264Z",
+  "phase": "phase1-completed",
+  "files": [
+    "/Users/user1/parking-response-generatorv3/snapshots/templates-phase1-2025-08-03T08-27-40-264Z.json",
+    "/Users/user1/parking-response-generatorv3/snapshots/stats-phase1-2025-08-03T08-27-40-264Z.json",
+    "/Users/user1/parking-response-generatorv3/snapshots/schema-phase1-2025-08-03T08-27-40-264Z.json"
+  ],
+  "summary": {
+    "totalTemplates": 192,
+    "approvedTemplates": 64,
+    "draftTemplates": 128,
+    "constraintsCount": 1,
+    "indexesCount": 3
+  }
+}

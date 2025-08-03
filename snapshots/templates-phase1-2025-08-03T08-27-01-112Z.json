@@ -1,0 +1,3973 @@
+{
+  "timestamp": "2025-08-03T08-27-01-112Z",
+  "phase": "phase1-completed",
+  "totalCount": 192,
+  "approvedCount": 64,
+  "draftCount": 128,
+  "templates": [
+    {
+      "id": 1,
+      "title": "予約確認_通常",
+      "category": "reservation",
+      "intent": "check",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T12:54:26.697Z",
+      "updated_at": "2025-08-01T12:54:26.697Z"
+    },
+    {
+      "id": 2,
+      "title": "予約作成_緊急",
+      "category": "reservation",
+      "intent": "create",
+      "tone": "urgent",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T12:54:26.711Z",
+      "updated_at": "2025-08-01T12:54:26.711Z"
+    },
+    {
+      "id": 3,
+      "title": "予約変更_通常",
+      "category": "reservation",
+      "intent": "modify",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T12:54:26.718Z",
+      "updated_at": "2025-08-01T12:54:26.718Z"
+    },
+    {
+      "id": 4,
+      "title": "予約キャンセル_通常",
+      "category": "reservation",
+      "intent": "cancel",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T12:54:26.724Z",
+      "updated_at": "2025-08-01T12:54:26.724Z"
+    },
+    {
+      "id": 5,
+      "title": "予約確認_将来",
+      "category": "reservation",
+      "intent": "check",
+      "tone": "future",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T12:54:26.730Z",
+      "updated_at": "2025-08-01T12:54:26.730Z"
+    },
+    {
+      "id": 6,
+      "title": "支払い確認_通常",
+      "category": "payment",
+      "intent": "check",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T12:54:26.735Z",
+      "updated_at": "2025-08-01T12:54:26.735Z"
+    },
+    {
+      "id": 7,
+      "title": "支払い方法_通常",
+      "category": "payment",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T12:54:26.741Z",
+      "updated_at": "2025-08-01T12:54:26.741Z"
+    },
+    {
+      "id": 8,
+      "title": "支払い報告_緊急",
+      "category": "payment",
+      "intent": "report",
+      "tone": "urgent",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T12:54:26.747Z",
+      "updated_at": "2025-08-01T12:54:26.747Z"
+    },
+    {
+      "id": 9,
+      "title": "料金確認_将来",
+      "category": "payment",
+      "intent": "check",
+      "tone": "future",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T12:54:26.753Z",
+      "updated_at": "2025-08-01T12:54:26.753Z"
+    },
+    {
+      "id": 10,
+      "title": "送迎確認_通常",
+      "category": "shuttle",
+      "intent": "check",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T12:54:26.759Z",
+      "updated_at": "2025-08-01T12:54:26.759Z"
+    },
+    {
+      "id": 11,
+      "title": "送迎予約_緊急",
+      "category": "shuttle",
+      "intent": "create",
+      "tone": "urgent",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T12:54:26.765Z",
+      "updated_at": "2025-08-01T12:54:26.765Z"
+    },
+    {
+      "id": 12,
+      "title": "送迎変更_通常",
+      "category": "shuttle",
+      "intent": "modify",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T12:54:26.770Z",
+      "updated_at": "2025-08-01T12:54:26.770Z"
+    },
+    {
+      "id": 13,
+      "title": "送迎キャンセル_通常",
+      "category": "shuttle",
+      "intent": "cancel",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T12:54:26.776Z",
+      "updated_at": "2025-08-01T12:54:26.776Z"
+    },
+    {
+      "id": 14,
+      "title": "設備確認_通常",
+      "category": "facility",
+      "intent": "check",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T12:54:26.782Z",
+      "updated_at": "2025-08-01T12:54:26.782Z"
+    },
+    {
+      "id": 15,
+      "title": "設備予約_通常",
+      "category": "facility",
+      "intent": "create",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T12:54:26.787Z",
+      "updated_at": "2025-08-01T12:54:26.787Z"
+    },
+    {
+      "id": 16,
+      "title": "設備故障_緊急",
+      "category": "facility",
+      "intent": "report",
+      "tone": "urgent",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T12:54:26.793Z",
+      "updated_at": "2025-08-01T12:54:26.793Z"
+    },
+    {
+      "id": 17,
+      "title": "設備案内_将来",
+      "category": "facility",
+      "intent": "inquiry",
+      "tone": "future",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T12:54:26.799Z",
+      "updated_at": "2025-08-01T12:54:26.799Z"
+    },
+    {
+      "id": 18,
+      "title": "トラブル報告_緊急",
+      "category": "trouble",
+      "intent": "report",
+      "tone": "urgent",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T12:54:26.804Z",
+      "updated_at": "2025-08-01T12:54:26.804Z"
+    },
+    {
+      "id": 19,
+      "title": "トラブル確認_通常",
+      "category": "trouble",
+      "intent": "check",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T12:54:26.809Z",
+      "updated_at": "2025-08-01T12:54:26.809Z"
+    },
+    {
+      "id": 20,
+      "title": "トラブル対応_通常",
+      "category": "trouble",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T12:54:26.815Z",
+      "updated_at": "2025-08-01T12:54:26.815Z"
+    },
+    {
+      "id": 21,
+      "title": "営業時間_通常",
+      "category": "other",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T12:54:26.821Z",
+      "updated_at": "2025-08-01T12:54:26.821Z"
+    },
+    {
+      "id": 22,
+      "title": "問い合わせ_通常",
+      "category": "other",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T12:54:26.826Z",
+      "updated_at": "2025-08-01T12:54:26.826Z"
+    },
+    {
+      "id": 23,
+      "title": "緊急連絡_緊急",
+      "category": "other",
+      "intent": "report",
+      "tone": "urgent",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T12:54:26.833Z",
+      "updated_at": "2025-08-01T12:54:26.833Z"
+    },
+    {
+      "id": 52,
+      "title": "予約問い合わせ_通常",
+      "category": "reservation",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T14:14:13.731Z",
+      "updated_at": "2025-08-01T14:14:13.731Z"
+    },
+    {
+      "id": 57,
+      "title": "支払い問い合わせ_通常",
+      "category": "payment",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T14:14:13.807Z",
+      "updated_at": "2025-08-01T14:14:13.807Z"
+    },
+    {
+      "id": 62,
+      "title": "送迎問い合わせ_通常",
+      "category": "shuttle",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T14:14:13.846Z",
+      "updated_at": "2025-08-01T14:14:13.846Z"
+    },
+    {
+      "id": 73,
+      "title": "利用の流れ_予約方法_ネット予約",
+      "category": "reservation",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:06.982Z",
+      "updated_at": "2025-08-01T15:32:06.982Z"
+    },
+    {
+      "id": 74,
+      "title": "利用の流れ_予約確認_完了画面",
+      "category": "reservation",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:06.999Z",
+      "updated_at": "2025-08-01T15:32:06.999Z"
+    },
+    {
+      "id": 75,
+      "title": "利用の流れ_来場時_手順",
+      "category": "reservation",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.011Z",
+      "updated_at": "2025-08-01T15:32:07.011Z"
+    },
+    {
+      "id": 76,
+      "title": "利用の流れ_帰着時_手順",
+      "category": "reservation",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.023Z",
+      "updated_at": "2025-08-01T15:32:07.023Z"
+    },
+    {
+      "id": 77,
+      "title": "利用の流れ_精算時_支払方法",
+      "category": "reservation",
+      "intent": "answer",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.035Z",
+      "updated_at": "2025-08-01T15:32:07.035Z"
+    },
+    {
+      "id": 78,
+      "title": "利用の流れ_鍵管理_注意点",
+      "category": "reservation",
+      "intent": "warn",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.046Z",
+      "updated_at": "2025-08-01T15:32:07.046Z"
+    },
+    {
+      "id": 79,
+      "title": "利用の流れ_必要物_持ち物",
+      "category": "reservation",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.057Z",
+      "updated_at": "2025-08-01T15:32:07.057Z"
+    },
+    {
+      "id": 80,
+      "title": "予約関連_予約条件_軽自動車",
+      "category": "reservation",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.072Z",
+      "updated_at": "2025-08-01T15:32:07.072Z"
+    },
+    {
+      "id": 81,
+      "title": "予約関連_確認事項_基本条件",
+      "category": "reservation",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.084Z",
+      "updated_at": "2025-08-01T15:32:07.084Z"
+    },
+    {
+      "id": 82,
+      "title": "予約関連_複数予約_確認手順",
+      "category": "reservation",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.095Z",
+      "updated_at": "2025-08-01T15:32:07.095Z"
+    },
+    {
+      "id": 83,
+      "title": "予約関連_トラブル対応_重複予約",
+      "category": "reservation",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.106Z",
+      "updated_at": "2025-08-01T15:32:07.106Z"
+    },
+    {
+      "id": 84,
+      "title": "予約関連_長期予約_注意事項",
+      "category": "reservation",
+      "intent": "warn",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.116Z",
+      "updated_at": "2025-08-01T15:32:07.116Z"
+    },
+    {
+      "id": 85,
+      "title": "予約関連_システム通知_メール",
+      "category": "reservation",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.127Z",
+      "updated_at": "2025-08-01T15:32:07.127Z"
+    },
+    {
+      "id": 86,
+      "title": "予約関連_割引プラン_コンパクト",
+      "category": "reservation",
+      "intent": "answer",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.138Z",
+      "updated_at": "2025-08-01T15:32:07.138Z"
+    },
+    {
+      "id": 87,
+      "title": "予約関連_来場時間_前泊",
+      "category": "reservation",
+      "intent": "answer",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.148Z",
+      "updated_at": "2025-08-01T15:32:07.148Z"
+    },
+    {
+      "id": 88,
+      "title": "車両関連_車両情報_車種",
+      "category": "vehicle",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.159Z",
+      "updated_at": "2025-08-01T15:32:07.159Z"
+    },
+    {
+      "id": 89,
+      "title": "車両関連_サイズ確認_確認手順",
+      "category": "vehicle",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.171Z",
+      "updated_at": "2025-08-01T15:32:07.171Z"
+    },
+    {
+      "id": 90,
+      "title": "車両関連_鍵管理_預かり",
+      "category": "vehicle",
+      "intent": "important",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.183Z",
+      "updated_at": "2025-08-01T15:32:07.183Z"
+    },
+    {
+      "id": 91,
+      "title": "車両関連_駐車環境_汚れ",
+      "category": "vehicle",
+      "intent": "warn",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.193Z",
+      "updated_at": "2025-08-01T15:32:07.193Z"
+    },
+    {
+      "id": 92,
+      "title": "送迎関連_時間_来場時間",
+      "category": "shuttle",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.203Z",
+      "updated_at": "2025-08-01T15:32:07.203Z"
+    },
+    {
+      "id": 93,
+      "title": "送迎関連_時間_所要時間",
+      "category": "shuttle",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.214Z",
+      "updated_at": "2025-08-01T15:32:07.214Z"
+    },
+    {
+      "id": 94,
+      "title": "送迎関連_特別対応_車椅子",
+      "category": "shuttle",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.225Z",
+      "updated_at": "2025-08-01T15:32:07.225Z"
+    },
+    {
+      "id": 95,
+      "title": "送迎関連_案内_乗り場",
+      "category": "shuttle",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.235Z",
+      "updated_at": "2025-08-01T15:32:07.235Z"
+    },
+    {
+      "id": 96,
+      "title": "送迎関連_案内変更_待機場所",
+      "category": "shuttle",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.246Z",
+      "updated_at": "2025-08-01T15:32:07.246Z"
+    },
+    {
+      "id": 97,
+      "title": "送迎関連_忘れ物対応_手順",
+      "category": "shuttle",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.257Z",
+      "updated_at": "2025-08-01T15:32:07.257Z"
+    },
+    {
+      "id": 98,
+      "title": "送迎関連_運行管理_スケジュール",
+      "category": "shuttle",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.269Z",
+      "updated_at": "2025-08-01T15:32:07.269Z"
+    },
+    {
+      "id": 99,
+      "title": "送迎関連_制限事項_定員",
+      "category": "shuttle",
+      "intent": "answer",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.279Z",
+      "updated_at": "2025-08-01T15:32:07.279Z"
+    },
+    {
+      "id": 100,
+      "title": "送迎関連_制限事項_人数制限",
+      "category": "shuttle",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.289Z",
+      "updated_at": "2025-08-01T15:32:07.289Z"
+    },
+    {
+      "id": 101,
+      "title": "送迎関連_所要時間_目安",
+      "category": "shuttle",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.300Z",
+      "updated_at": "2025-08-01T15:32:07.300Z"
+    },
+    {
+      "id": 102,
+      "title": "送迎関連_案内方法_小冊子",
+      "category": "shuttle",
+      "intent": "answer",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.312Z",
+      "updated_at": "2025-08-01T15:32:07.312Z"
+    },
+    {
+      "id": 103,
+      "title": "送迎関連_設備_荷物置場",
+      "category": "shuttle",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.322Z",
+      "updated_at": "2025-08-01T15:32:07.322Z"
+    },
+    {
+      "id": 104,
+      "title": "料金関連_割引_プラン併用",
+      "category": "payment",
+      "intent": "restrict",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.333Z",
+      "updated_at": "2025-08-01T15:32:07.333Z"
+    },
+    {
+      "id": 105,
+      "title": "料金関連_支払時期_精算時",
+      "category": "payment",
+      "intent": "answer",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.343Z",
+      "updated_at": "2025-08-01T15:32:07.343Z"
+    },
+    {
+      "id": 106,
+      "title": "料金関連_領収書_発行",
+      "category": "payment",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.354Z",
+      "updated_at": "2025-08-01T15:32:07.354Z"
+    },
+    {
+      "id": 107,
+      "title": "料金関連_支払方法_現金",
+      "category": "payment",
+      "intent": "answer",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.365Z",
+      "updated_at": "2025-08-01T15:32:07.365Z"
+    },
+    {
+      "id": 108,
+      "title": "料金関連_領収書_発行手順",
+      "category": "payment",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.376Z",
+      "updated_at": "2025-08-01T15:32:07.376Z"
+    },
+    {
+      "id": 109,
+      "title": "料金関連_追加料金_案内手順",
+      "category": "payment",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.387Z",
+      "updated_at": "2025-08-01T15:32:07.387Z"
+    },
+    {
+      "id": 110,
+      "title": "料金関連_料金改定_対応手順",
+      "category": "payment",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.398Z",
+      "updated_at": "2025-08-01T15:32:07.398Z"
+    },
+    {
+      "id": 111,
+      "title": "料金関連_団体予約_計算方法",
+      "category": "payment",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.408Z",
+      "updated_at": "2025-08-01T15:32:07.408Z"
+    },
+    {
+      "id": 112,
+      "title": "料金関連_追加料金_忘れ物配達",
+      "category": "payment",
+      "intent": "answer",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.419Z",
+      "updated_at": "2025-08-01T15:32:07.419Z"
+    },
+    {
+      "id": 113,
+      "title": "料金関連_支払方法_現金精算",
+      "category": "payment",
+      "intent": "answer",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.429Z",
+      "updated_at": "2025-08-01T15:32:07.429Z"
+    },
+    {
+      "id": 114,
+      "title": "料金関連_変更料金_早帰り",
+      "category": "payment",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.440Z",
+      "updated_at": "2025-08-01T15:32:07.440Z"
+    },
+    {
+      "id": 115,
+      "title": "記入情報_フライト情報_便未定",
+      "category": "information",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.451Z",
+      "updated_at": "2025-08-01T15:32:07.451Z"
+    },
+    {
+      "id": 116,
+      "title": "記入情報_備考欄_必須事項",
+      "category": "information",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.461Z",
+      "updated_at": "2025-08-01T15:32:07.461Z"
+    },
+    {
+      "id": 117,
+      "title": "記入情報_個人情報_入力形式",
+      "category": "information",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.472Z",
+      "updated_at": "2025-08-01T15:32:07.472Z"
+    },
+    {
+      "id": 118,
+      "title": "記入情報_フライト情報_確認項目",
+      "category": "information",
+      "intent": "warn",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.482Z",
+      "updated_at": "2025-08-01T15:32:07.482Z"
+    },
+    {
+      "id": 119,
+      "title": "記入情報_データ管理_修正手順",
+      "category": "information",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.493Z",
+      "updated_at": "2025-08-01T15:32:07.493Z"
+    },
+    {
+      "id": 120,
+      "title": "記入情報_データ修正_入力ミス",
+      "category": "information",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.503Z",
+      "updated_at": "2025-08-01T15:32:07.503Z"
+    },
+    {
+      "id": 121,
+      "title": "免責約款_引渡後_責任範囲",
+      "category": "disclaimer",
+      "intent": "warn",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.513Z",
+      "updated_at": "2025-08-01T15:32:07.513Z"
+    },
+    {
+      "id": 122,
+      "title": "免責約款_車両損傷_補償範囲",
+      "category": "disclaimer",
+      "intent": "warn",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.524Z",
+      "updated_at": "2025-08-01T15:32:07.524Z"
+    },
+    {
+      "id": 123,
+      "title": "免責約款_走行距離_増加",
+      "category": "disclaimer",
+      "intent": "warn",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.535Z",
+      "updated_at": "2025-08-01T15:32:07.535Z"
+    },
+    {
+      "id": 124,
+      "title": "アクセス_検索方法_GoogleMap",
+      "category": "general",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.545Z",
+      "updated_at": "2025-08-01T15:32:07.545Z"
+    },
+    {
+      "id": 125,
+      "title": "アクセス_住所_目印",
+      "category": "general",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.555Z",
+      "updated_at": "2025-08-01T15:32:07.555Z"
+    },
+    {
+      "id": 126,
+      "title": "アクセス_首都高湾岸線_東京方面",
+      "category": "general",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.566Z",
+      "updated_at": "2025-08-01T15:32:07.566Z"
+    },
+    {
+      "id": 127,
+      "title": "アクセス_首都高湾岸線_横浜方面",
+      "category": "general",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.576Z",
+      "updated_at": "2025-08-01T15:32:07.576Z"
+    },
+    {
+      "id": 128,
+      "title": "アクセス_首都高羽田線_東京方面",
+      "category": "general",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.587Z",
+      "updated_at": "2025-08-01T15:32:07.587Z"
+    },
+    {
+      "id": 129,
+      "title": "アクセス_首都高羽田線_横浜方面",
+      "category": "general",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.597Z",
+      "updated_at": "2025-08-01T15:32:07.597Z"
+    },
+    {
+      "id": 130,
+      "title": "アクセス_目印_公園",
+      "category": "general",
+      "intent": "answer",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.608Z",
+      "updated_at": "2025-08-01T15:32:07.608Z"
+    },
+    {
+      "id": 131,
+      "title": "アクセス_注意点_左折禁止",
+      "category": "general",
+      "intent": "warn",
+      "tone": "normal",
+      "status": "approved",
+      "source": null,
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:32:07.619Z",
+      "updated_at": "2025-08-01T15:32:07.619Z"
+    },
+    {
+      "id": 132,
+      "title": "利用の流れ_予約方法_ネット予約",
+      "category": "reservation",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "予約方法を教えてください",
+      "replyTypeTags": [
+        "丁寧説明",
+        "簡潔回答"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "例外不可",
+        "時間制限あり"
+      ],
+      "note": "ネット予約のみ対応",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.286Z",
+      "updated_at": "2025-08-01T15:51:52.286Z"
+    },
+    {
+      "id": 133,
+      "title": "利用の流れ_来場時_手順",
+      "category": "reservation",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "当日の来場時の流れを教えてください",
+      "replyTypeTags": [
+        "丁寧説明",
+        "重要説明"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "計画必要"
+      ],
+      "note": "カギの付属品は事前に外す",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.310Z",
+      "updated_at": "2025-08-01T15:51:52.310Z"
+    },
+    {
+      "id": 134,
+      "title": "利用の流れ_精算時_支払方法",
+      "category": "reservation",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "精算時に必要なものはありますか？",
+      "replyTypeTags": [
+        "簡潔回答",
+        "明確制限"
+      ],
+      "infoSourceTags": [
+        "サイト掲載",
+        "料金表記載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "例外不可"
+      ],
+      "note": "現金のみ対応",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.327Z",
+      "updated_at": "2025-08-01T15:51:52.327Z"
+    },
+    {
+      "id": 135,
+      "title": "利用の流れ_鍵管理_注意点",
+      "category": "reservation",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "鍵の取り扱いで注意することは？",
+      "replyTypeTags": [
+        "注意喚起",
+        "重要説明"
+      ],
+      "infoSourceTags": [
+        "規約記載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "免責事項"
+      ],
+      "note": "付属品の事前取り外し必須",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.339Z",
+      "updated_at": "2025-08-01T15:51:52.339Z"
+    },
+    {
+      "id": 136,
+      "title": "利用の流れ_必要物_持ち物",
+      "category": "reservation",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "利用時に必要な持ち物は？",
+      "replyTypeTags": [
+        "丁寧説明",
+        "重要説明"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "事前準備必要"
+      ],
+      "note": "携帯電話が必須",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.351Z",
+      "updated_at": "2025-08-01T15:51:52.351Z"
+    },
+    {
+      "id": 137,
+      "title": "予約関連_予約条件_軽自動車",
+      "category": "reservation",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "軽自動車の予約はカレンダーの満車に関係なく予約できますか？",
+      "replyTypeTags": [
+        "丁寧説明",
+        "明確制限"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "時間制限あり"
+      ],
+      "note": "21時以降のお電話でご確認ください",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.363Z",
+      "updated_at": "2025-08-01T15:51:52.363Z"
+    },
+    {
+      "id": 138,
+      "title": "予約関連_確認事項_基本条件",
+      "category": "reservation",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "予約 確認事項 予約する際の確認事項 予約時に確認すべきこと 予約時の確認事項 予約する時の確認事項 予約 確認 項目 予約 前 確認 事前確認 予約の確認事項 予約確認事項 予約の確認 注意すべき確認事項 確認必須 予約する際の確認事項を教えてください 予約時の確認事項は何ですか 予約前に確認すること 予約時チェック項目 予約する際の確認事項 予約確認 確認事項を教えてください 予約で確認すること 予約時の確認ポイント 予約時にチェックすること 予約前の確認リスト 予約する前に確認すべきこと 予約に関する確認事項 予約の際にはどんなことに注意すべきですか 予約の確認事項とは 予約時の重要事項 予約する際の確認事項を教えてください 予約時の確認事項は何ですか 予約前に確認することを教えてください 予約時のチェック項目は何ですか 予約時の確認ポイント 予約確認事項とは 予約前の確認事項 予約時の重要な確認事項 予約時確認すべきこと 確認すべき予約事項 予約時のチェックリスト 予約時確認事項リスト 予約する際に確認すること 予約する時に確認しておくこと 予約する前に確認しておくべきこと",
+      "replyTypeTags": [
+        "丁寧説明",
+        "重要説明"
+      ],
+      "infoSourceTags": [
+        "サイト掲載",
+        "規約記載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "必須説明"
+      ],
+      "note": "予約時の確認事項の詳細",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.376Z",
+      "updated_at": "2025-08-01T15:51:52.376Z"
+    },
+    {
+      "id": 139,
+      "title": "予約関連_複数予約_確認手順",
+      "category": "reservation",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "複数台の予約はどのように確認すべきですか？",
+      "replyTypeTags": [
+        "丁寧説明",
+        "手順説明"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "事前確認必要"
+      ],
+      "note": "複数台利用の意図を必ず確認",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.388Z",
+      "updated_at": "2025-08-01T15:51:52.388Z"
+    },
+    {
+      "id": 140,
+      "title": "予約関連_トラブル対応_重複予約",
+      "category": "reservation",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "同一予約者から複数の重複予約が入った場合の対応は？",
+      "replyTypeTags": [
+        "丁寧説明",
+        "手順説明"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "運用対処"
+      ],
+      "note": "ブラウザの戻るボタン操作等による誤送信が原因",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.399Z",
+      "updated_at": "2025-08-01T15:51:52.399Z"
+    },
+    {
+      "id": 141,
+      "title": "予約関連_長期予約_注意事項",
+      "category": "reservation",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "長期駐車の場合のバッテリー対応と注意事項は？",
+      "replyTypeTags": [
+        "注意喚起",
+        "重要説明"
+      ],
+      "infoSourceTags": [
+        "規約記載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "事前承諾必要"
+      ],
+      "note": "バッテリー対応の承諾を必ず得る",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.411Z",
+      "updated_at": "2025-08-01T15:51:52.411Z"
+    },
+    {
+      "id": 142,
+      "title": "予約関連_システム通知_メール",
+      "category": "reservation",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "メールが届かない場合はどうすればよいですか？",
+      "replyTypeTags": [
+        "丁寧説明",
+        "トラブル対応"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "代替確認方法"
+      ],
+      "note": "予約完了画面で予約内容の確認可能",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.423Z",
+      "updated_at": "2025-08-01T15:51:52.423Z"
+    },
+    {
+      "id": 143,
+      "title": "予約関連_割引プラン_コンパクト",
+      "category": "reservation",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "コンパクトカー割引プランの条件は？",
+      "replyTypeTags": [
+        "簡潔回答",
+        "明確制限"
+      ],
+      "infoSourceTags": [
+        "料金表記載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "詳細列挙"
+      ],
+      "note": "指定車種の確認必須",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.434Z",
+      "updated_at": "2025-08-01T15:51:52.434Z"
+    },
+    {
+      "id": 144,
+      "title": "予約関連_来場時間_前泊",
+      "category": "reservation",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "前泊の場合の来場時間は？",
+      "replyTypeTags": [
+        "簡潔回答",
+        "明確制限"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "時間制限あり"
+      ],
+      "note": "時間厳守でお願いします",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.445Z",
+      "updated_at": "2025-08-01T15:51:52.445Z"
+    },
+    {
+      "id": 145,
+      "title": "車両関連_車両情報_車種",
+      "category": "vehicle",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "approved",
+      "source": "csv",
+      "originQuestion": "車種はどのように記入すればよいですか？",
+      "replyTypeTags": [
+        "丁寧説明",
+        "簡潔回答"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "入力指示"
+      ],
+      "note": "スペースを入れてブランド名と車名を記入",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.456Z",
+      "updated_at": "2025-08-01T15:51:52.456Z"
+    },
+    {
+      "id": 146,
+      "title": "車両関連_サイズ確認_確認手順",
+      "category": "vehicle",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "車両サイズの確認はどのように行いますか？",
+      "replyTypeTags": [
+        "丁寧説明",
+        "手順説明"
+      ],
+      "infoSourceTags": [
+        "サイト掲載",
+        "規約記載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "手順説明"
+      ],
+      "note": "サイズ超過の事前防止",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.467Z",
+      "updated_at": "2025-08-01T15:51:52.467Z"
+    },
+    {
+      "id": 147,
+      "title": "車両関連_鍵管理_預かり",
+      "category": "vehicle",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "車の鍵の取り扱いについて注意点は？",
+      "replyTypeTags": [
+        "重要説明",
+        "注意喚起"
+      ],
+      "infoSourceTags": [
+        "規約記載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "罰則あり"
+      ],
+      "note": "業務上必要な鍵の管理",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.479Z",
+      "updated_at": "2025-08-01T15:51:52.479Z"
+    },
+    {
+      "id": 148,
+      "title": "車両関連_駐車環境_汚れ",
+      "category": "vehicle",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "駐車場での車両の汚れについて",
+      "replyTypeTags": [
+        "注意喚起",
+        "免責説明"
+      ],
+      "infoSourceTags": [
+        "規約記載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "免責事項"
+      ],
+      "note": "自然発生の汚れについて免責",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.491Z",
+      "updated_at": "2025-08-01T15:51:52.491Z"
+    },
+    {
+      "id": 149,
+      "title": "送迎関連_時間_来場時間",
+      "category": "shuttle",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "来場時間はどのように設定すればよいですか？",
+      "replyTypeTags": [
+        "丁寧説明",
+        "明確制限"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "時間制限あり",
+        "計画必要"
+      ],
+      "note": "搭乗手続きに間に合わない可能性があるため、時間厳守でお願いします",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.613Z",
+      "updated_at": "2025-08-01T15:51:52.613Z"
+    },
+    {
+      "id": 150,
+      "title": "送迎関連_時間_所要時間",
+      "category": "shuttle",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "送迎の所要時間はどのくらいですか？",
+      "replyTypeTags": [
+        "丁寧説明",
+        "時間提示"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "計画必要"
+      ],
+      "note": "搭乗手続きに間に合うよう時間厳守でお願いします",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.625Z",
+      "updated_at": "2025-08-01T15:51:52.625Z"
+    },
+    {
+      "id": 151,
+      "title": "送迎関連_特別対応_車椅子",
+      "category": "shuttle",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "車椅子やベビーカーの送迎は可能ですか？",
+      "replyTypeTags": [
+        "丁寧説明",
+        "配慮説明"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "事前申告必要"
+      ],
+      "note": "事前申告が必要です",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.655Z",
+      "updated_at": "2025-08-01T15:51:52.655Z"
+    },
+    {
+      "id": 152,
+      "title": "送迎関連_案内_乗り場",
+      "category": "shuttle",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "送迎時の乗り場はどこですか？",
+      "replyTypeTags": [
+        "丁寧説明",
+        "手順説明"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "連絡必須"
+      ],
+      "note": "電話連絡時に乗り場をご案内",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.667Z",
+      "updated_at": "2025-08-01T15:51:52.667Z"
+    },
+    {
+      "id": 153,
+      "title": "送迎関連_案内変更_待機場所",
+      "category": "shuttle",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "送迎車の待機場所変更時の対応は？",
+      "replyTypeTags": [
+        "手順説明",
+        "迅速連絡"
+      ],
+      "infoSourceTags": [
+        "特別案内"
+      ],
+      "situationTags": [
+        "標準対応",
+        "連絡必須"
+      ],
+      "note": "お客様の混乱防止",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.678Z",
+      "updated_at": "2025-08-01T15:51:52.678Z"
+    },
+    {
+      "id": 154,
+      "title": "送迎関連_忘れ物対応_手順",
+      "category": "shuttle",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "送迎時の忘れ物対応手順は？",
+      "replyTypeTags": [
+        "手順説明",
+        "追加費用案内"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "追加費用発生"
+      ],
+      "note": "お届けは別途1000円必要",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.690Z",
+      "updated_at": "2025-08-01T15:51:52.690Z"
+    },
+    {
+      "id": 155,
+      "title": "送迎関連_運行管理_スケジュール",
+      "category": "shuttle",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "送迎スケジュール調整の基準は？",
+      "replyTypeTags": [
+        "手順説明",
+        "内部業務"
+      ],
+      "infoSourceTags": [
+        "特別案内"
+      ],
+      "situationTags": [
+        "標準対応",
+        "内部管理"
+      ],
+      "note": "効率的な配車の実現",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.702Z",
+      "updated_at": "2025-08-01T15:51:52.702Z"
+    },
+    {
+      "id": 156,
+      "title": "送迎関連_制限事項_定員",
+      "category": "shuttle",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "送迎車の乗車定員は何名ですか？",
+      "replyTypeTags": [
+        "簡潔回答",
+        "明確制限"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "人数制限あり"
+      ],
+      "note": "1台あたり5名様まで",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.713Z",
+      "updated_at": "2025-08-01T15:51:52.713Z"
+    },
+    {
+      "id": 157,
+      "title": "送迎関連_制限事項_人数制限",
+      "category": "shuttle",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "送迎人数の制限について詳しく教えてください",
+      "replyTypeTags": [
+        "丁寧説明",
+        "明確制限"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "人数制限あり",
+        "理由説明"
+      ],
+      "note": "幼児含む5名まで",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.726Z",
+      "updated_at": "2025-08-01T15:51:52.726Z"
+    },
+    {
+      "id": 158,
+      "title": "送迎関連_所要時間_目安",
+      "category": "shuttle",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "送迎の所要時間と来場時間の目安は？",
+      "replyTypeTags": [
+        "丁寧説明",
+        "時間提示"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "計画必要",
+        "相乗り情報"
+      ],
+      "note": "出発時間から逆算して来場",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.738Z",
+      "updated_at": "2025-08-01T15:51:52.738Z"
+    },
+    {
+      "id": 159,
+      "title": "送迎関連_案内方法_小冊子",
+      "category": "shuttle",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "帰りの送迎場所はどうやって確認できますか？",
+      "replyTypeTags": [
+        "簡潔回答",
+        "案内物説明"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "案内資料あり"
+      ],
+      "note": "小冊子で案内を確認",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.755Z",
+      "updated_at": "2025-08-01T15:51:52.755Z"
+    },
+    {
+      "id": 160,
+      "title": "送迎関連_設備_荷物置場",
+      "category": "shuttle",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "送迎車は荷物をどこに置けますか？",
+      "replyTypeTags": [
+        "丁寧説明",
+        "設備案内"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "スタッフ依頼"
+      ],
+      "note": "後部座席後ろに荷物置場あり",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.771Z",
+      "updated_at": "2025-08-01T15:51:52.771Z"
+    },
+    {
+      "id": 161,
+      "title": "料金関連_割引_プラン併用",
+      "category": "payment",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "割引プランは併用できますか？",
+      "replyTypeTags": [
+        "明確制限",
+        "簡潔回答"
+      ],
+      "infoSourceTags": [
+        "料金表記載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "例外不可"
+      ],
+      "note": "長期割引プランは繁忙期利用不可",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.790Z",
+      "updated_at": "2025-08-01T15:51:52.790Z"
+    },
+    {
+      "id": 162,
+      "title": "料金関連_支払時期_精算時",
+      "category": "payment",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "追加料金（深夜料金など）はいつ支払いますか？",
+      "replyTypeTags": [
+        "簡潔回答",
+        "追加費用案内"
+      ],
+      "infoSourceTags": [
+        "料金表記載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "時間制限あり"
+      ],
+      "note": "精算は現金のみ",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.809Z",
+      "updated_at": "2025-08-01T15:51:52.809Z"
+    },
+    {
+      "id": 163,
+      "title": "料金関連_領収書_発行",
+      "category": "payment",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "領収書は発行できますか？",
+      "replyTypeTags": [
+        "丁寧説明",
+        "特別対応案内"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "事前申告可能",
+        "払戻対応"
+      ],
+      "note": "遅延時の領収書は航空会社への払い戻し申請が可能",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.821Z",
+      "updated_at": "2025-08-01T15:51:52.821Z"
+    },
+    {
+      "id": 164,
+      "title": "料金関連_支払方法_現金",
+      "category": "payment",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "支払い方法は何が使えますか？",
+      "replyTypeTags": [
+        "簡潔回答",
+        "明確制限"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "例外不可"
+      ],
+      "note": "カード利用不可",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.832Z",
+      "updated_at": "2025-08-01T15:51:52.832Z"
+    },
+    {
+      "id": 165,
+      "title": "料金関連_領収書_発行手順",
+      "category": "payment",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "領収書発行時の注意点は？",
+      "replyTypeTags": [
+        "手順説明",
+        "内部業務"
+      ],
+      "infoSourceTags": [
+        "特別案内"
+      ],
+      "situationTags": [
+        "標準対応",
+        "手順詳細"
+      ],
+      "note": "航空会社への払戻対応考慮",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.846Z",
+      "updated_at": "2025-08-01T15:51:52.846Z"
+    },
+    {
+      "id": 166,
+      "title": "料金関連_追加料金_案内手順",
+      "category": "payment",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "追加料金発生時の案内方法は？",
+      "replyTypeTags": [
+        "手順説明",
+        "内部業務"
+      ],
+      "infoSourceTags": [
+        "特別案内"
+      ],
+      "situationTags": [
+        "標準対応",
+        "追加費用発生"
+      ],
+      "note": "事前説明でトラブル防止",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.863Z",
+      "updated_at": "2025-08-01T15:51:52.863Z"
+    },
+    {
+      "id": 167,
+      "title": "料金関連_料金改定_対応手順",
+      "category": "payment",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "料金改定時の対応手順は？",
+      "replyTypeTags": [
+        "手順説明",
+        "内部業務"
+      ],
+      "infoSourceTags": [
+        "特別案内"
+      ],
+      "situationTags": [
+        "標準対応",
+        "内部管理"
+      ],
+      "note": "混乱防止の事前対応",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.880Z",
+      "updated_at": "2025-08-01T15:51:52.880Z"
+    },
+    {
+      "id": 168,
+      "title": "料金関連_団体予約_計算方法",
+      "category": "payment",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "団体予約の料金計算方法は？",
+      "replyTypeTags": [
+        "手順説明",
+        "丁寧説明"
+      ],
+      "infoSourceTags": [
+        "料金表記載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "詳細列挙"
+      ],
+      "note": "正確な料金計算の実施",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.903Z",
+      "updated_at": "2025-08-01T15:51:52.903Z"
+    },
+    {
+      "id": 169,
+      "title": "料金関連_追加料金_忘れ物配達",
+      "category": "payment",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "忘れ物のお届けにかかる料金は？",
+      "replyTypeTags": [
+        "簡潔回答",
+        "追加費用案内"
+      ],
+      "infoSourceTags": [
+        "料金表記載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "追加費用発生"
+      ],
+      "note": "配達料金は現金でお支払いください",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.921Z",
+      "updated_at": "2025-08-01T15:51:52.921Z"
+    },
+    {
+      "id": 170,
+      "title": "料金関連_支払方法_現金精算",
+      "category": "payment",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "支払方法と精算タイミングは？",
+      "replyTypeTags": [
+        "簡潔回答",
+        "明確制限"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "例外不可"
+      ],
+      "note": "現金のみ対応可能",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.933Z",
+      "updated_at": "2025-08-01T15:51:52.933Z"
+    },
+    {
+      "id": 171,
+      "title": "料金関連_変更料金_早帰り",
+      "category": "payment",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "帰着日変更時の料金はどうなりますか？",
+      "replyTypeTags": [
+        "明確説明",
+        "追加費用案内"
+      ],
+      "infoSourceTags": [
+        "料金表記載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "条件分岐あり"
+      ],
+      "note": "事前表示金額基準",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.944Z",
+      "updated_at": "2025-08-01T15:51:52.944Z"
+    },
+    {
+      "id": 172,
+      "title": "記入情報_フライト情報_便未定",
+      "category": "information",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "approved",
+      "source": "csv",
+      "originQuestion": "便が未定ですが予約できますか？",
+      "replyTypeTags": [
+        "丁寧説明",
+        "明確指示"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "事前申告必要",
+        "詳細列挙"
+      ],
+      "note": "確定後はメールまたは電話でご連絡ください",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.956Z",
+      "updated_at": "2025-08-01T15:51:52.956Z"
+    },
+    {
+      "id": 173,
+      "title": "記入情報_備考欄_必須事項",
+      "category": "information",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "備考欄には何を記入すべきですか？",
+      "replyTypeTags": [
+        "丁寧説明",
+        "重要説明"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "詳細列挙",
+        "必須情報"
+      ],
+      "note": "必要な情報の記入漏れにご注意ください",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.967Z",
+      "updated_at": "2025-08-01T15:51:52.967Z"
+    },
+    {
+      "id": 174,
+      "title": "記入情報_個人情報_入力形式",
+      "category": "information",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "個人情報はどのように入力すればよいですか？",
+      "replyTypeTags": [
+        "明確指示",
+        "入力例示"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "形式指定",
+        "必須情報"
+      ],
+      "note": "予約確認や緊急連絡に使用します",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.978Z",
+      "updated_at": "2025-08-01T15:51:52.978Z"
+    },
+    {
+      "id": 175,
+      "title": "記入情報_フライト情報_確認項目",
+      "category": "information",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "フライト情報の確認で注意すべき点は？",
+      "replyTypeTags": [
+        "注意喚起",
+        "重要説明"
+      ],
+      "infoSourceTags": [
+        "サイト掲載",
+        "規約記載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "確認必須",
+        "詳細列挙"
+      ],
+      "note": "国際線利用の見落とし防止",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:52.990Z",
+      "updated_at": "2025-08-01T15:51:52.990Z"
+    },
+    {
+      "id": 176,
+      "title": "記入情報_データ管理_修正手順",
+      "category": "information",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "予約データの修正方法は？",
+      "replyTypeTags": [
+        "手順説明",
+        "内部業務"
+      ],
+      "infoSourceTags": [
+        "特別案内"
+      ],
+      "situationTags": [
+        "標準対応",
+        "内部管理"
+      ],
+      "note": "変更履歴の保持必要",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:53.001Z",
+      "updated_at": "2025-08-01T15:51:53.001Z"
+    },
+    {
+      "id": 177,
+      "title": "記入情報_データ修正_入力ミス",
+      "category": "information",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "予約情報の入力ミスを発見した場合は？",
+      "replyTypeTags": [
+        "丁寧説明",
+        "手順説明"
+      ],
+      "infoSourceTags": [
+        "特別案内"
+      ],
+      "situationTags": [
+        "標準対応",
+        "内部管理"
+      ],
+      "note": "二重確認の徹底",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:53.012Z",
+      "updated_at": "2025-08-01T15:51:53.012Z"
+    },
+    {
+      "id": 178,
+      "title": "免責約款_引渡後_責任範囲",
+      "category": "disclaimer",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "approved",
+      "source": "csv",
+      "originQuestion": "車両引渡し後の事故や損傷についての責任は？",
+      "replyTypeTags": [
+        "注意喚起",
+        "免責説明"
+      ],
+      "infoSourceTags": [
+        "規約記載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "免責事項"
+      ],
+      "note": "引渡後の免責を明確化",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:53.024Z",
+      "updated_at": "2025-08-01T15:51:53.024Z"
+    },
+    {
+      "id": 179,
+      "title": "免責約款_車両損傷_補償範囲",
+      "category": "disclaimer",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "車両の傷についてはどのように対応しますか？",
+      "replyTypeTags": [
+        "注意喚起",
+        "免責説明"
+      ],
+      "infoSourceTags": [
+        "規約記載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "免責事項"
+      ],
+      "note": "事前確認が重要",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:53.035Z",
+      "updated_at": "2025-08-01T15:51:53.035Z"
+    },
+    {
+      "id": 180,
+      "title": "免責約款_走行距離_増加",
+      "category": "disclaimer",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "走行距離の増加について",
+      "replyTypeTags": [
+        "注意喚起",
+        "説明"
+      ],
+      "infoSourceTags": [
+        "規約記載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "免責事項"
+      ],
+      "note": "場内移動による距離増加あり",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:53.046Z",
+      "updated_at": "2025-08-01T15:51:53.046Z"
+    },
+    {
+      "id": 181,
+      "title": "アクセス_検索方法_GoogleMap",
+      "category": "access",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "approved",
+      "source": "csv",
+      "originQuestion": "GoogleMapでの検索方法を教えてください",
+      "replyTypeTags": [
+        "丁寧説明",
+        "手順説明"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "手順説明"
+      ],
+      "note": "正確な位置表示のため必要な設定",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:53.057Z",
+      "updated_at": "2025-08-01T15:51:53.057Z"
+    },
+    {
+      "id": 182,
+      "title": "アクセス_住所_目印",
+      "category": "access",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "住所はどこになりますか？",
+      "replyTypeTags": [
+        "丁寧説明",
+        "場所説明"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "詳細説明"
+      ],
+      "note": "目印を参考に特定",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:53.068Z",
+      "updated_at": "2025-08-01T15:51:53.068Z"
+    },
+    {
+      "id": 183,
+      "title": "アクセス_首都高湾岸線_東京方面",
+      "category": "access",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "首都高湾岸線（東京方面）からのアクセスは？",
+      "replyTypeTags": [
+        "丁寧説明",
+        "経路案内"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "注意点あり"
+      ],
+      "note": "左折禁止の注意必要",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:53.079Z",
+      "updated_at": "2025-08-01T15:51:53.079Z"
+    },
+    {
+      "id": 184,
+      "title": "アクセス_首都高湾岸線_横浜方面",
+      "category": "access",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "首都高湾岸線（横浜方面）からのアクセスは？",
+      "replyTypeTags": [
+        "丁寧説明",
+        "経路案内"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "手順説明"
+      ],
+      "note": "トンネル後の右折注意",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:53.090Z",
+      "updated_at": "2025-08-01T15:51:53.090Z"
+    },
+    {
+      "id": 185,
+      "title": "アクセス_首都高羽田線_東京方面",
+      "category": "access",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "首都高1号羽田線（東京方面）からのアクセスは？",
+      "replyTypeTags": [
+        "丁寧説明",
+        "経路案内"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "手順説明"
+      ],
+      "note": "2つの橋を経由",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:53.101Z",
+      "updated_at": "2025-08-01T15:51:53.101Z"
+    },
+    {
+      "id": 186,
+      "title": "アクセス_首都高羽田線_横浜方面",
+      "category": "access",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "首都高1号羽田線（横浜方面）からのアクセスは？",
+      "replyTypeTags": [
+        "丁寧説明",
+        "経路案内"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "手順説明"
+      ],
+      "note": "天空橋駅が目印",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:53.117Z",
+      "updated_at": "2025-08-01T15:51:53.117Z"
+    },
+    {
+      "id": 187,
+      "title": "アクセス_目印_公園",
+      "category": "access",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "最寄りの目印は何ですか？",
+      "replyTypeTags": [
+        "簡潔回答",
+        "場所説明"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "詳細説明"
+      ],
+      "note": "複数の目印を確認",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:53.134Z",
+      "updated_at": "2025-08-01T15:51:53.134Z"
+    },
+    {
+      "id": 188,
+      "title": "アクセス_注意点_左折禁止",
+      "category": "access",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "間違えやすい箇所はありますか？",
+      "replyTypeTags": [
+        "注意喚起",
+        "場所説明"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "注意点あり"
+      ],
+      "note": "誤進入に注意",
+      "usageLabel": null,
+      "created_at": "2025-08-01T15:51:53.146Z",
+      "updated_at": "2025-08-01T15:51:53.146Z"
+    },
+    {
+      "id": 189,
+      "title": "予約関連_キャンセル_基本方針",
+      "category": "reservation",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "キャンセル料はいくらですか？キャンセルポリシーを教えてください。",
+      "replyTypeTags": [
+        "丁寧説明",
+        "情報提供"
+      ],
+      "infoSourceTags": [
+        "料金表記載",
+        "規約記載"
+      ],
+      "situationTags": [
+        "標準対応"
+      ],
+      "note": "キャンセルポリシーの基本情報。明確かつ簡潔に伝える。",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:10:11.142Z",
+      "updated_at": "2025-08-01T16:10:11.142Z"
+    },
+    {
+      "id": 190,
+      "title": "予約関連_キャンセル_支払方法",
+      "category": "reservation",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "キャンセル料はどのように支払えばよいですか？",
+      "replyTypeTags": [
+        "情報提供",
+        "具体案内"
+      ],
+      "infoSourceTags": [
+        "規約記載"
+      ],
+      "situationTags": [
+        "標準対応"
+      ],
+      "note": "振込方法について具体的に案内し、振込手数料は顧客負担であることを明記。",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:10:11.160Z",
+      "updated_at": "2025-08-01T16:10:11.160Z"
+    },
+    {
+      "id": 191,
+      "title": "予約関連_キャンセル_部分キャンセル",
+      "category": "reservation",
+      "intent": "inquiry",
+      "tone": "strict",
+      "status": "approved",
+      "source": "csv",
+      "originQuestion": "3日間の予約をしましたが、2日目だけキャンセルしたいです。部分的なキャンセルはできますか？",
+      "replyTypeTags": [
+        "丁寧説明",
+        "代替提案"
+      ],
+      "infoSourceTags": [
+        "規約記載"
+      ],
+      "situationTags": [
+        "例外不可"
+      ],
+      "note": "部分キャンセル不可の理由と、全キャンセル後の再予約という代替手段を説明。",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:10:11.175Z",
+      "updated_at": "2025-08-01T16:10:11.175Z"
+    },
+    {
+      "id": 192,
+      "title": "予約関連_キャンセル_天候不良・災害",
+      "category": "reservation",
+      "intent": "inquiry",
+      "tone": "evidence_required",
+      "status": "approved",
+      "source": "csv",
+      "originQuestion": "台風で飛行機が欠航になりました。このような場合もキャンセル料は発生しますか？",
+      "replyTypeTags": [
+        "共感対応",
+        "条件付対応"
+      ],
+      "infoSourceTags": [
+        "規約記載"
+      ],
+      "situationTags": [
+        "証拠確認必須"
+      ],
+      "note": "基本的にキャンセル料が発生することを伝えつつ、証明書がある場合の個別対応の可能性を示唆。",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:10:11.188Z",
+      "updated_at": "2025-08-01T16:10:11.188Z"
+    },
+    {
+      "id": 193,
+      "title": "予約関連_キャンセル_病気・怪我",
+      "category": "reservation",
+      "intent": "inquiry",
+      "tone": "evidence_required",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "急病で利用できなくなりました。キャンセル料は免除できませんか？",
+      "replyTypeTags": [
+        "共感対応",
+        "条件付対応"
+      ],
+      "infoSourceTags": [
+        "規約記載"
+      ],
+      "situationTags": [
+        "証拠確認必須"
+      ],
+      "note": "基本的にキャンセル料が発生することを伝えつつ、医療証明書がある場合の個別対応の可能性を示唆。",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:10:11.202Z",
+      "updated_at": "2025-08-01T16:10:11.202Z"
+    },
+    {
+      "id": 194,
+      "title": "予約関連_キャンセル_キャンセル方法",
+      "category": "reservation",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "キャンセルの手続き方法について教えてください。",
+      "replyTypeTags": [
+        "丁寧説明",
+        "情報提供"
+      ],
+      "infoSourceTags": [
+        "規約記載"
+      ],
+      "situationTags": [
+        "標準対応"
+      ],
+      "note": "キャンセル手続きの具体的な方法について説明。",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:10:11.215Z",
+      "updated_at": "2025-08-01T16:10:11.215Z"
+    },
+    {
+      "id": 195,
+      "title": "利用の流れ_初回利用_手順",
+      "category": "reservation",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "初めて利用する場合、どのような手順で駐車場を利用すればよいですか？",
+      "replyTypeTags": [
+        "丁寧説明",
+        "手順説明"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "事前準備必要"
+      ],
+      "note": "初めての方向け利用手順",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:12:23.162Z",
+      "updated_at": "2025-08-01T16:12:23.162Z"
+    },
+    {
+      "id": 196,
+      "title": "サービス案内_概要_基本情報",
+      "category": "general",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "approved",
+      "source": "csv",
+      "originQuestion": "駐車場サービスの概要を教えてください",
+      "replyTypeTags": [
+        "丁寧説明",
+        "サービス説明"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応",
+        "必須説明"
+      ],
+      "note": "サービス概要の基本説明",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:12:23.180Z",
+      "updated_at": "2025-08-01T16:12:23.180Z"
+    },
+    {
+      "id": 197,
+      "title": "利用の流れ_営業時間_基本情報",
+      "category": "reservation",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "駐車場の営業時間を教えてください。何時から何時まで利用できますか？",
+      "replyTypeTags": [
+        "情報提供",
+        "明確回答"
+      ],
+      "infoSourceTags": [
+        "サイト掲載"
+      ],
+      "situationTags": [
+        "標準対応"
+      ],
+      "note": "駐車場の営業時間とサポートの受付時間を明確に区別して説明する。",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:14:28.112Z",
+      "updated_at": "2025-08-01T16:14:28.112Z"
+    },
+    {
+      "id": 198,
+      "title": "送迎関連_人数制限_ルール",
+      "category": "shuttle",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "送迎人数のルールを教えてください",
+      "replyTypeTags": [
+        "ルール説明"
+      ],
+      "infoSourceTags": [
+        "社内ルール"
+      ],
+      "situationTags": [
+        "人数制限"
+      ],
+      "note": "「ひとり送迎プラン」への誘導を含む",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:16:04.460Z",
+      "updated_at": "2025-08-01T16:16:04.460Z"
+    },
+    {
+      "id": 199,
+      "title": "送迎関連_ひとり送迎_利用方法",
+      "category": "shuttle",
+      "intent": "guide",
+      "tone": "normal",
+      "status": "approved",
+      "source": "csv",
+      "originQuestion": "6名以上での利用方法について教えてください",
+      "replyTypeTags": [
+        "手順案内"
+      ],
+      "infoSourceTags": [
+        "社内ルール"
+      ],
+      "situationTags": [
+        "ひとり送迎プラン;大人数対応"
+      ],
+      "note": "ひとり送迎プラン推奨",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:16:04.478Z",
+      "updated_at": "2025-08-01T16:16:04.478Z"
+    },
+    {
+      "id": 200,
+      "title": "送迎関連_人数制限_子供",
+      "category": "shuttle",
+      "intent": "answer",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "お子様の同乗は可能ですか？",
+      "replyTypeTags": [
+        "可否回答"
+      ],
+      "infoSourceTags": [
+        "社内ルール"
+      ],
+      "situationTags": [
+        "人数制限;子供同乗"
+      ],
+      "note": "",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:16:04.491Z",
+      "updated_at": "2025-08-01T16:16:04.491Z"
+    },
+    {
+      "id": 201,
+      "title": "予約関連_変更_ひとり送迎へ",
+      "category": "reservation",
+      "intent": "guide",
+      "tone": "normal",
+      "status": "approved",
+      "source": "csv",
+      "originQuestion": "予約内容をひとり送迎に変更できますか？",
+      "replyTypeTags": [
+        "手順案内"
+      ],
+      "infoSourceTags": [
+        "社内ルール"
+      ],
+      "situationTags": [
+        "予約変更;ひとり送迎プラン"
+      ],
+      "note": "ひとり送迎プラン推奨",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:16:04.504Z",
+      "updated_at": "2025-08-01T16:16:04.504Z"
+    },
+    {
+      "id": 202,
+      "title": "送迎関連_ひとり送迎_複数台利用",
+      "category": "shuttle",
+      "intent": "guide",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "複数台や大人数での利用について",
+      "replyTypeTags": [
+        "手順案内"
+      ],
+      "infoSourceTags": [
+        "社内ルール"
+      ],
+      "situationTags": [
+        "ひとり送迎プラン;複数台利用;大人数対応"
+      ],
+      "note": "ひとり送迎プラン推奨",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:16:04.517Z",
+      "updated_at": "2025-08-01T16:16:04.517Z"
+    },
+    {
+      "id": 203,
+      "title": "送迎関連_車椅子対応_単独利用",
+      "category": "shuttle",
+      "intent": "explain",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "車椅子で一人での利用について",
+      "replyTypeTags": [
+        "条件説明"
+      ],
+      "infoSourceTags": [
+        "社内ルール"
+      ],
+      "situationTags": [
+        "車椅子利用;単独利用"
+      ],
+      "note": "車椅子利用者への確認",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:16:04.529Z",
+      "updated_at": "2025-08-01T16:16:04.529Z"
+    },
+    {
+      "id": 204,
+      "title": "対応_クレーム_基本方針",
+      "category": "trouble",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "クレームや苦情があった場合の対応方針を教えてください。",
+      "replyTypeTags": [
+        "情報提供",
+        "明確回答"
+      ],
+      "infoSourceTags": [
+        "マニュアル"
+      ],
+      "situationTags": [
+        "標準対応"
+      ],
+      "note": "クレーム対応の基本方針を明確に伝え、お客様の声を大切にしていることを強調する。",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:18:17.043Z",
+      "updated_at": "2025-08-01T16:18:17.043Z"
+    },
+    {
+      "id": 205,
+      "title": "対応_クレーム_返金対応",
+      "category": "trouble",
+      "intent": "inquiry",
+      "tone": "special",
+      "status": "approved",
+      "source": "csv",
+      "originQuestion": "返金対応はしてもらえますか？",
+      "replyTypeTags": [
+        "情報提供",
+        "条件付き回答"
+      ],
+      "infoSourceTags": [
+        "マニュアル"
+      ],
+      "situationTags": [
+        "特殊対応"
+      ],
+      "note": "返金対応の可能性を示しつつも、一律の返金ではなく状況に応じた対応であることを伝える。",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:18:17.061Z",
+      "updated_at": "2025-08-01T16:18:17.061Z"
+    },
+    {
+      "id": 206,
+      "title": "対応_クレーム_責任者対応",
+      "category": "trouble",
+      "intent": "inquiry",
+      "tone": "special",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "責任者に直接話を聞いてもらえますか？",
+      "replyTypeTags": [
+        "情報提供",
+        "条件付き回答"
+      ],
+      "infoSourceTags": [
+        "マニュアル"
+      ],
+      "situationTags": [
+        "特殊対応"
+      ],
+      "note": "責任者対応の可能性を示しつつも、まずは担当者が状況を把握する必要があることを伝える。",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:18:17.074Z",
+      "updated_at": "2025-08-01T16:18:17.074Z"
+    },
+    {
+      "id": 207,
+      "title": "特殊対応_規則否定_基本対応",
+      "category": "general",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "御社の規則は間違っている。変更すべきだ。",
+      "replyTypeTags": [
+        "丁寧説明",
+        "毅然対応"
+      ],
+      "infoSourceTags": [
+        "規約記載"
+      ],
+      "situationTags": [
+        "標準対応"
+      ],
+      "note": "感情的にならず、丁寧に、しかし毅然とした態度で対応する。規則の根拠をさりげなく示す。",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:25:34.416Z",
+      "updated_at": "2025-08-01T16:25:34.416Z"
+    },
+    {
+      "id": 208,
+      "title": "特殊対応_例外要求_不可能な要求",
+      "category": "general",
+      "intent": "explain",
+      "tone": "strict",
+      "status": "approved",
+      "source": "csv",
+      "originQuestion": "私だけ特別に規則を曲げてほしい。例外として認めるべきだ。",
+      "replyTypeTags": [
+        "丁寧説明"
+      ],
+      "infoSourceTags": [
+        "規約記載"
+      ],
+      "situationTags": [
+        "例外不可"
+      ],
+      "note": "公平性の観点を強調し、代替案の可能性を示唆する。",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:25:34.437Z",
+      "updated_at": "2025-08-01T16:25:34.437Z"
+    },
+    {
+      "id": 209,
+      "title": "特殊対応_料金クレーム_料金否定",
+      "category": "general",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "料金設定がおかしい。もっと安くすべきだ。不当に高い。",
+      "replyTypeTags": [
+        "丁寧説明",
+        "根拠提示"
+      ],
+      "infoSourceTags": [
+        "料金表記載"
+      ],
+      "situationTags": [
+        "標準対応"
+      ],
+      "note": "料金設定の根拠を示しつつ、割引オプションがあれば提案する。",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:25:34.452Z",
+      "updated_at": "2025-08-01T16:25:34.452Z"
+    },
+    {
+      "id": 210,
+      "title": "特殊対応_過剰要求_不合理な要求",
+      "category": "general",
+      "intent": "inquiry",
+      "tone": "conditional",
+      "status": "approved",
+      "source": "csv",
+      "originQuestion": "車に傷がついた。全額補償すべきだ。新車に交換しろ。",
+      "replyTypeTags": [
+        "丁寧説明",
+        "明確拒否"
+      ],
+      "infoSourceTags": [
+        "免責約款記載"
+      ],
+      "situationTags": [
+        "条件付対応"
+      ],
+      "note": "免責約款を明記しつつ、過大な要求には応じられないことを明確に伝える。証拠収集を促す。",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:25:34.467Z",
+      "updated_at": "2025-08-01T16:25:34.467Z"
+    },
+    {
+      "id": 211,
+      "title": "特殊対応_無視判断_判断基準",
+      "category": "general",
+      "intent": "inquiry",
+      "tone": "conditional",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "どのような場合に問い合わせを無視すべきか？",
+      "replyTypeTags": [
+        "内部参照",
+        "判断支援"
+      ],
+      "infoSourceTags": [
+        "社内規定"
+      ],
+      "situationTags": [
+        "条件付対応"
+      ],
+      "note": "社内向けナレッジ。実際の顧客には送らないこと。無視が適切な状況についてのガイドライン。",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:25:34.481Z",
+      "updated_at": "2025-08-01T16:25:34.481Z"
+    },
+    {
+      "id": 212,
+      "title": "特殊対応_脅迫・威圧_法的措置示唆",
+      "category": "general",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "要求を受け入れないなら法的手段に訴える。弁護士に相談済みだ。",
+      "replyTypeTags": [
+        "冷静対応",
+        "情報収集"
+      ],
+      "infoSourceTags": [
+        "社内規定"
+      ],
+      "situationTags": [
+        "注意対応"
+      ],
+      "note": "冷静に対応し、脅迫に動じない姿勢を示す。必要に応じて法務部門への連携を示唆する。",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:25:34.496Z",
+      "updated_at": "2025-08-01T16:25:34.496Z"
+    },
+    {
+      "id": 213,
+      "title": "特殊対応_脅迫・威圧_SNS拡散示唆",
+      "category": "general",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "要求を聞かないならSNSで拡散して評判を落とす。",
+      "replyTypeTags": [
+        "冷静対応",
+        "対話促進"
+      ],
+      "infoSourceTags": [
+        "社内規定"
+      ],
+      "situationTags": [
+        "注意対応"
+      ],
+      "note": "脅迫に動じず、建設的な対話を促す。事実に基づかない情報拡散は法的問題になる可能性があることには触れない（過度な警告と受け取られる可能性があるため）。",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:25:34.511Z",
+      "updated_at": "2025-08-01T16:25:34.511Z"
+    },
+    {
+      "id": 214,
+      "title": "特殊対応_暴言・侮辱_人格攻撃",
+      "category": "general",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "（スタッフへの暴言や人格攻撃を含む問い合わせ）",
+      "replyTypeTags": [
+        "冷静対応",
+        "境界設定"
+      ],
+      "infoSourceTags": [
+        "社内規定"
+      ],
+      "situationTags": [
+        "注意対応"
+      ],
+      "note": "暴言そのものには直接触れず、建設的な対話を促す。繰り返される場合は対応中止も検討。",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:25:34.525Z",
+      "updated_at": "2025-08-01T16:25:34.525Z"
+    },
+    {
+      "id": 215,
+      "title": "特殊対応_事実誤認_虚偽主張",
+      "category": "general",
+      "intent": "inquiry",
+      "tone": "evidence_required",
+      "status": "approved",
+      "source": "csv",
+      "originQuestion": "（利用実績がないにも関わらず）先日利用した際にスタッフの対応が悪かった。補償しろ。",
+      "replyTypeTags": [
+        "丁寧調査",
+        "証拠要求"
+      ],
+      "infoSourceTags": [
+        "利用記録"
+      ],
+      "situationTags": [
+        "証拠確認必須"
+      ],
+      "note": "直接的に「ご利用の記録がない」とは言わず、証拠提示を求める。詳細情報の提供を求めることで対応を進める。",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:25:34.539Z",
+      "updated_at": "2025-08-01T16:25:34.539Z"
+    },
+    {
+      "id": 216,
+      "title": "特殊対応_繰り返し問い合わせ_同一内容反復",
+      "category": "general",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "（同じ内容で3回目以上の問い合わせ）",
+      "replyTypeTags": [
+        "明確終了",
+        "最終案内"
+      ],
+      "infoSourceTags": [
+        "過去対応履歴"
+      ],
+      "situationTags": [
+        "最終対応"
+      ],
+      "note": "過去の回答を明示し、新たな情報がなければこれ以上の対応がないことを示唆する。これが最後の回答であることを暗に伝える。",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:25:34.553Z",
+      "updated_at": "2025-08-01T16:25:34.553Z"
+    },
+    {
+      "id": 217,
+      "title": "特殊対応_料金クレーム_キャンセル料拒否",
+      "category": "general",
+      "intent": "inquiry",
+      "tone": "conditional",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "キャンセル料を払うつもりはない。払う必要がないはずだ。規約に同意していない。",
+      "replyTypeTags": [
+        "丁寧説明",
+        "毅然対応"
+      ],
+      "infoSourceTags": [
+        "規約記載",
+        "料金表記載"
+      ],
+      "situationTags": [
+        "条件付対応"
+      ],
+      "note": "規約への同意は予約完了時点で得られていることを説明。特別な事情があれば個別対応の可能性も示唆。",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:25:34.566Z",
+      "updated_at": "2025-08-01T16:25:34.566Z"
+    },
+    {
+      "id": 218,
+      "title": "特殊対応_例外要求_キャンセル料免除",
+      "category": "general",
+      "intent": "inquiry",
+      "tone": "evidence_required",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "急病でキャンセルしたのにキャンセル料を取るのは非常識だ。免除すべきだ。",
+      "replyTypeTags": [
+        "共感対応",
+        "条件付対応"
+      ],
+      "infoSourceTags": [
+        "社内規定"
+      ],
+      "situationTags": [
+        "証拠確認必須"
+      ],
+      "note": "急病等の場合は証明書の提出を条件に免除検討の可能性を示す。証拠なしでの免除は認めない。",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:25:34.581Z",
+      "updated_at": "2025-08-01T16:25:34.581Z"
+    },
+    {
+      "id": 219,
+      "title": "特殊対応_料金クレーム_キャンセル料計算",
+      "category": "general",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "キャンセル料の計算が間違っている。もっと安くなるはずだ。",
+      "replyTypeTags": [
+        "丁寧説明",
+        "具体例提示"
+      ],
+      "infoSourceTags": [
+        "料金表記載",
+        "予約記録"
+      ],
+      "situationTags": [
+        "標準対応"
+      ],
+      "note": "具体的な計算根拠を示し、透明性を確保する。クレームの具体的内容を聞き出す。",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:25:34.596Z",
+      "updated_at": "2025-08-01T16:25:34.596Z"
+    },
+    {
+      "id": 220,
+      "title": "特殊対応_無断行為_ノーショウ",
+      "category": "general",
+      "intent": "inquiry",
+      "tone": "conditional",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": "予約をキャンセルしたつもりだった。キャンセル料を請求されたが納得できない。",
+      "replyTypeTags": [
+        "丁寧説明",
+        "情報収集"
+      ],
+      "infoSourceTags": [
+        "予約記録",
+        "規約記載"
+      ],
+      "situationTags": [
+        "条件付対応"
+      ],
+      "note": "ノーショウの場合は100%請求が原則だが、状況によっては調整の余地があることを示唆。事実確認を重視。",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:25:34.611Z",
+      "updated_at": "2025-08-01T16:25:34.611Z"
+    },
+    {
+      "id": 221,
+      "title": "特殊対応_例外要求_部分キャンセル拒否",
+      "category": "general",
+      "intent": "inquiry",
+      "tone": "strict",
+      "status": "approved",
+      "source": "csv",
+      "originQuestion": "一部だけキャンセルできないのはおかしい。柔軟に対応すべきだ。",
+      "replyTypeTags": [
+        "丁寧説明",
+        "根拠提示"
+      ],
+      "infoSourceTags": [
+        "規約記載",
+        "システム仕様"
+      ],
+      "situationTags": [
+        "例外不可"
+      ],
+      "note": "部分キャンセル不可の理由を詳細に説明し、システム上の制約と運営方針を明確に伝える。",
+      "usageLabel": null,
+      "created_at": "2025-08-01T16:25:34.625Z",
+      "updated_at": "2025-08-01T16:25:34.625Z"
+    },
+    {
+      "id": 222,
+      "title": "capacity:restriction:formal:ver1",
+      "category": "capacity",
+      "intent": "restriction",
+      "tone": "formal",
+      "status": "approved",
+      "source": "csv_import",
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-02T07:28:07.138Z",
+      "updated_at": "2025-08-02T07:46:54.640Z"
+    },
+    {
+      "id": 223,
+      "title": "parking:restriction:formal:ver1",
+      "category": "parking",
+      "intent": "restriction",
+      "tone": "formal",
+      "status": "approved",
+      "source": "csv_import",
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-02T07:28:07.286Z",
+      "updated_at": "2025-08-02T07:46:54.640Z"
+    },
+    {
+      "id": 224,
+      "title": "parking:check:polite:ver1",
+      "category": "parking",
+      "intent": "check",
+      "tone": "polite",
+      "status": "approved",
+      "source": "csv_import",
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-02T07:28:07.294Z",
+      "updated_at": "2025-08-02T07:46:54.640Z"
+    },
+    {
+      "id": 225,
+      "title": "shuttle:change:polite:ver1",
+      "category": "shuttle",
+      "intent": "change",
+      "tone": "polite",
+      "status": "approved",
+      "source": "csv_import",
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-02T07:28:07.302Z",
+      "updated_at": "2025-08-02T07:46:54.640Z"
+    },
+    {
+      "id": 227,
+      "title": "reservation:change:polite:ver1",
+      "category": "reservation",
+      "intent": "change",
+      "tone": "polite",
+      "status": "approved",
+      "source": "csv_import",
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-02T07:28:07.318Z",
+      "updated_at": "2025-08-02T07:46:54.640Z"
+    },
+    {
+      "id": 228,
+      "title": "capacity:inquiry:normal:ver1",
+      "category": "capacity",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "approved",
+      "source": "csv_import",
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-02T07:33:50.660Z",
+      "updated_at": "2025-08-02T07:46:54.640Z"
+    },
+    {
+      "id": 229,
+      "title": "parking:inquiry:normal:ver1",
+      "category": "parking",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "approved",
+      "source": "csv_import",
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-02T07:33:50.776Z",
+      "updated_at": "2025-08-02T07:46:54.640Z"
+    },
+    {
+      "id": 231,
+      "title": "shuttle:inquiry:normal:ver1",
+      "category": "shuttle",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv_import",
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-02T07:33:50.793Z",
+      "updated_at": "2025-08-02T07:46:54.640Z"
+    },
+    {
+      "id": 233,
+      "title": "reservation:inquiry:normal:ver1",
+      "category": "reservation",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv_import",
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": null,
+      "usageLabel": null,
+      "created_at": "2025-08-02T07:33:50.808Z",
+      "updated_at": "2025-08-02T07:46:54.640Z"
+    },
+    {
+      "id": 235,
+      "title": "reservation:check:normal:ver1",
+      "category": "reservation",
+      "intent": "check",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": "完了画面が重要",
+      "usageLabel": "◯",
+      "created_at": "2025-08-02T07:38:02.352Z",
+      "updated_at": "2025-08-02T07:38:31.686Z"
+    },
+    {
+      "id": 249,
+      "title": "vehicle:inquiry:normal:ver1",
+      "category": "vehicle",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": "スペースを入れてブランド名と車名を記入",
+      "usageLabel": "◯",
+      "created_at": "2025-08-02T07:38:02.450Z",
+      "updated_at": "2025-08-02T07:38:31.686Z"
+    },
+    {
+      "id": 250,
+      "title": "vehicle:check:normal:ver1",
+      "category": "vehicle",
+      "intent": "check",
+      "tone": "normal",
+      "status": "approved",
+      "source": "csv",
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": "サイズ超過の事前防止",
+      "usageLabel": "◯",
+      "created_at": "2025-08-02T07:38:02.457Z",
+      "updated_at": "2025-08-02T07:38:31.686Z"
+    },
+    {
+      "id": 265,
+      "title": "payment:inquiry:normal:ver1",
+      "category": "payment",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": "長期割引プランは繁忙期利用不可",
+      "usageLabel": "◯",
+      "created_at": "2025-08-02T07:38:02.680Z",
+      "updated_at": "2025-08-02T07:38:31.686Z"
+    },
+    {
+      "id": 276,
+      "title": "information:inquiry:normal:ver1",
+      "category": "information",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": "確定後はメールまたは電話でご連絡ください",
+      "usageLabel": "◯",
+      "created_at": "2025-08-02T07:38:02.754Z",
+      "updated_at": "2025-08-02T07:38:31.686Z"
+    },
+    {
+      "id": 281,
+      "title": "information:modify:normal:ver1",
+      "category": "information",
+      "intent": "modify",
+      "tone": "normal",
+      "status": "approved",
+      "source": "csv",
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": "二重確認の徹底",
+      "usageLabel": "◯",
+      "created_at": "2025-08-02T07:38:02.787Z",
+      "updated_at": "2025-08-02T07:38:31.686Z"
+    },
+    {
+      "id": 282,
+      "title": "disclaimer:inquiry:normal:ver1",
+      "category": "disclaimer",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": "引渡後の免責を明確化",
+      "usageLabel": "◯",
+      "created_at": "2025-08-02T07:38:02.795Z",
+      "updated_at": "2025-08-02T07:38:31.686Z"
+    },
+    {
+      "id": 285,
+      "title": "access:inquiry:normal:ver1",
+      "category": "access",
+      "intent": "inquiry",
+      "tone": "normal",
+      "status": "draft",
+      "source": "csv",
+      "originQuestion": null,
+      "replyTypeTags": [],
+      "infoSourceTags": [],
+      "situationTags": [],
+      "note": "正確な位置表示のため必要な設定",
+      "usageLabel": "◯",
+      "created_at": "2025-08-02T07:38:02.815Z",
+      "updated_at": "2025-08-02T07:38:31.686Z"
+    }
+  ]
+}

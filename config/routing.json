@@ -1,0 +1,56 @@
+{
+  "thresholds": {
+    "confidenceThreshold": 0.6,
+    "lowRiskConfidenceThreshold": 0.7,
+    "highUrgencyThreshold": 0.8
+  },
+  "lowRiskBypassTags": [
+    "標準対応",
+    "簡潔回答",
+    "通常対応",
+    "一般問い合わせ"
+  ],
+  "urgentTags": [
+    "緊急対応",
+    "事故対応",
+    "故障対応",
+    "セキュリティ",
+    "即座対応"
+  ],
+  "intentMapping": {
+    "check": ["確認", "ありますか", "できますか", "時間", "料金", "予約状況"],
+    "inquiry": ["教えて", "詳しく", "方法", "手順", "どうやって"],
+    "create": ["作成", "申込", "登録", "新規"],
+    "modify": ["変更", "修正", "更新"],
+    "cancel": ["キャンセル", "削除", "解約"],
+    "report": ["報告", "通知", "事故", "故障"]
+  },
+  "urgencyMapping": {
+    "high": ["緊急", "急いで", "すぐに", "至急", "事故", "故障"],
+    "medium": ["変更", "確認", "予約"],
+    "low": ["将来", "事前", "準備", "問い合わせ"]
+  },
+  "reviewRules": {
+    "enableLowRiskBypass": true,
+    "enableUrgentTagCheck": true,
+    "enableAlternativeCheck": true,
+    "minAlternatives": 2
+  },
+  "tiebreakerRules": {
+    "order": [
+      "usageLabel",
+      "updated_at",
+      "id"
+    ],
+    "usageLabelPriority": {
+      "◯": 1,
+      "△": 2,
+      "✖️": 3
+    },
+    "sortDirection": {
+      "usageLabel": "asc",
+      "updated_at": "desc",
+      "id": "asc"
+    }
+  }
+} 

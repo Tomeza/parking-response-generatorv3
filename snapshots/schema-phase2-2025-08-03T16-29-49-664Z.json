@@ -1,0 +1,25 @@
+{
+  "timestamp": "2025-08-03T16-29-49-664Z",
+  "phase": "phase2-completed",
+  "configHash": "f807afbff609614a2f877060e6015450325475acfc995206e2068c55d9ffd16c",
+  "constraints": [
+    {
+      "constraint_name": "Templates_pkey",
+      "constraint_definition": "PRIMARY KEY (id)"
+    }
+  ],
+  "indexes": [
+    {
+      "indexname": "Templates_category_intent_tone_status_idx",
+      "indexdef": "CREATE INDEX \"Templates_category_intent_tone_status_idx\" ON public.\"Templates\" USING btree (category, intent, tone, status)"
+    },
+    {
+      "indexname": "Templates_pkey",
+      "indexdef": "CREATE UNIQUE INDEX \"Templates_pkey\" ON public.\"Templates\" USING btree (id)"
+    },
+    {
+      "indexname": "uq_templates_approved_unique",
+      "indexdef": "CREATE UNIQUE INDEX uq_templates_approved_unique ON public.\"Templates\" USING btree (category, intent, tone) WHERE (status = 'approved'::text)"
+    }
+  ]
+}

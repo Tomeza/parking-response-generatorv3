@@ -1,0 +1,14 @@
+{
+  "timestamp": "2025-08-03T08-27-40-264Z",
+  "phase": "phase1-completed",
+  "statistics": {
+    "total_templates": 192,
+    "approved_count": 64,
+    "draft_count": 128,
+    "with_source": 107,
+    "with_origin_question": 90,
+    "with_reply_tags": 90,
+    "with_info_tags": 90,
+    "with_situation_tags": 90
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "timestamp": "2025-08-03T16-29-49-664Z",
+  "phase": "phase2-completed",
+  "configHash": "f807afbff609614a2f877060e6015450325475acfc995206e2068c55d9ffd16c",
+  "statistics": {
+    "total_templates": 192,
+    "approved_count": 64,
+    "draft_count": 128,
+    "with_source": 107,
+    "with_origin_question": 90,
+    "with_reply_tags": 90,
+    "with_info_tags": 90,
+    "with_situation_tags": 90
+  }
+}
