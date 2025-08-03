@@ -35,14 +35,14 @@ export async function recordFaqUsage(data: FaqUsageData) {
   try {
     await prisma.faqUsageStats.create({
       data: {
-        faq_id: data.faqId,
-        query_hash: queryHash,
-        query_text: data.queryText,
+        faqId: data.faqId,
+        queryHash: queryHash,
+        queryText: data.queryText,
         success: data.success,
         route: data.route,
-        latency_ms: data.latencyMs,
-        user_id: data.userId,
-        session_id: data.sessionId,
+        latencyMs: data.latencyMs,
+        userId: data.userId,
+        sessionId: data.sessionId,
       }
     });
   } catch (error) {
@@ -90,26 +90,10 @@ export async function getOverallUsageStats(): Promise<OverallUsageStats> {
       }
     }),
 
-    // P95 latency
+    // P95 latency - simplified calculation
     prisma.faqUsageStats.aggregate({
-      _max: {
+      _avg: {
         latencyMs: true
-      },
-      where: {
-        latencyMs: {
-          lte: {
-            // Subquery to get P95 latency threshold
-            all: prisma.faqUsageStats.aggregate({
-              _max: {
-                latencyMs: true
-              },
-              orderBy: {
-                latencyMs: 'desc'
-              },
-              take: Math.floor(await prisma.faqUsageStats.count() * 0.95)
-            }).latencyMs
-          }
-        }
       }
     })
   ]);
@@ -122,7 +106,7 @@ export async function getOverallUsageStats(): Promise<OverallUsageStats> {
       count: stat._count,
       successRate: stat._avg.latencyMs ? stat._avg.latencyMs * 100 : 0
     })),
-    p95LatencyMs: p95Latency._max.latencyMs || 0
+    p95LatencyMs: p95Latency._avg.latencyMs || 0
   };
 }
 

@@ -139,7 +139,9 @@ export async function classifyFaqCategory(faq: { question: string; answer: strin
           category: result.category,
           confidence: result.confidence,
           reason: result.reason,
-          needsReview: result.confidence < 0.8
+          needsReview: result.confidence < 0.8,
+          id: undefined, // Prismaが自動生成
+          updatedAt: new Date()
         }
       });
     }

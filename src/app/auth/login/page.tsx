@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -12,18 +12,7 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get('redirect') || '/templates';
-
-  // 既にログインしているかチェック
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        console.log('Already logged in, redirecting to:', redirectPath);
-        router.push(redirectPath);
-      }
-    };
-    checkSession();
-  }, [router, redirectPath]);
+  const supabase = createClientComponentClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,29 +20,17 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      console.log('Attempting login with:', { email, password });
-      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      console.log('Login response:', { data, error });
-
       if (error) {
-        console.error('Login error:', error);
         throw error;
       }
 
       if (data.session) {
-        console.log('Login successful, session:', data.session);
-        console.log('Redirecting to:', redirectPath);
-        
-        // 少し待ってからリダイレクト
-        setTimeout(() => {
-          router.push(redirectPath);
-          router.refresh();
-        }, 100);
+        router.push(redirectPath);
       } else {
         throw new Error('セッションが作成されませんでした');
       }
@@ -62,6 +39,21 @@ export default function LoginPage() {
       setError(err instanceof Error ? err.message : 'ログインに失敗しました');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Logout error:', error);
+        return;
+      }
+      
+      // ログアウト後はページをリフレッシュ
+      window.location.reload();
+    } catch (error) {
+      console.error('Logout failed:', error);
     }
   };
 
@@ -115,17 +107,8 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="rounded-md bg-red-50 p-4">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-red-700">{error}</p>
-                  </div>
-                </div>
+              <div className="text-red-600 text-sm">
+                {error}
               </div>
             )}
 
@@ -133,12 +116,37 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
               >
                 {isLoading ? 'ログイン中...' : 'ログイン'}
               </button>
             </div>
           </form>
+
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">
+                  テスト用アカウント
+                </span>
+              </div>
+            </div>
+            <div className="mt-4 text-center text-sm text-gray-600">
+              <p>Email: test@example.com</p>
+              <p>Password: password123</p>
+            </div>
+            <div className="mt-4 text-center">
+              <button
+                onClick={handleLogout}
+                className="text-sm text-red-600 hover:text-red-500"
+              >
+                ログアウト
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

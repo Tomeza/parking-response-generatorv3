@@ -1,100 +1,263 @@
-const { PrismaClient } = require('@prisma/client');
-import bcrypt from 'bcryptjs';
+import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient({
-  log: ['query', 'info', 'warn', 'error'],
-});
+const prisma = new PrismaClient();
 
 async function main() {
-  console.log('シードデータの投入を開始します');
-  
-  try {
-    // 既存のデータを削除
-    console.log('既存のデータを削除します');
-    await prisma.alertWord.deleteMany({});
-    await prisma.knowledgeTag.deleteMany({});
-    await prisma.knowledge.deleteMany({});
-    await prisma.tag.deleteMany({});
-    
-    // タグの作成
-    console.log('タグを作成します');
-    const reservationTag = await prisma.tag.create({
-      data: {
-        tag_name: '予約',
-        description: '予約に関する情報',
-      },
-    });
-    console.log('予約タグを作成しました:', reservationTag);
+  console.log('Seeding database...');
 
-    const priceTag = await prisma.tag.create({
-      data: {
-        tag_name: '料金',
-        description: '料金に関する情報',
-      },
-    });
-    console.log('料金タグを作成しました:', priceTag);
+  // サンプルテンプレートの投入
+  const templates = [
+    // 予約関連テンプレート
+    {
+      title: '予約確認_通常',
+      content: 'ご予約の確認をいたします。予約番号をご確認ください。',
+      category: 'reservation',
+      intent: 'check',
+      tone: 'normal',
+      variables: { reservation_number: 'string' },
+      version: 1,
+      is_approved: true
+    },
+    {
+      title: '予約作成_緊急',
+      content: '緊急のご予約を承ります。至急対応いたします。',
+      category: 'reservation',
+      intent: 'create',
+      tone: 'urgent',
+      variables: { customer_name: 'string', vehicle_number: 'string' },
+      version: 1,
+      is_approved: true
+    },
+    {
+      title: '予約変更_通常',
+      content: 'ご予約の変更を承ります。変更内容をご確認ください。',
+      category: 'reservation',
+      intent: 'modify',
+      tone: 'normal',
+      variables: { reservation_number: 'string', new_date: 'date' },
+      version: 1,
+      is_approved: true
+    },
+    {
+      title: '予約キャンセル_通常',
+      content: 'ご予約のキャンセルを承ります。キャンセル手数料についてご案内いたします。',
+      category: 'reservation',
+      intent: 'cancel',
+      tone: 'normal',
+      variables: { reservation_number: 'string' },
+      version: 1,
+      is_approved: true
+    },
+    {
+      title: '予約確認_将来',
+      content: '将来のご予約についてご案内いたします。',
+      category: 'reservation',
+      intent: 'check',
+      tone: 'future',
+      variables: { future_date: 'date' },
+      version: 1,
+      is_approved: true
+    },
 
-    // ナレッジの作成
-    console.log('ナレッジを作成します');
-    const knowledge = await prisma.knowledge.create({
-      data: {
-        main_category: '予約',
-        sub_category: '予約方法',
-        detail_category: 'オンライン予約',
-        question: '駐車場の予約方法を教えてください',
-        answer: '当駐車場は24時間オンライン予約に対応しています。予約は以下の手順で行えます：\n\n1. 当社ウェブサイトにアクセス\n2. 予約フォームに必要事項を入力\n3. 予約内容の確認\n4. 予約完了\n\n予約は24時間前まで可能です。',
-        is_template: false,
-        usage: '○',
-        note: '基本的な予約方法の説明',
-        knowledge_tags: {
-          create: [
-            { tag_id: reservationTag.id },
-            { tag_id: priceTag.id },
-          ],
-        },
-      },
-    });
-    console.log('ナレッジを作成しました:', knowledge);
+    // 支払い関連テンプレート
+    {
+      title: '支払い確認_通常',
+      content: 'お支払い状況をご確認いたします。',
+      category: 'payment',
+      intent: 'check',
+      tone: 'normal',
+      variables: { invoice_number: 'string' },
+      version: 1,
+      is_approved: true
+    },
+    {
+      title: '支払い方法_通常',
+      content: 'お支払い方法についてご案内いたします。',
+      category: 'payment',
+      intent: 'inquiry',
+      tone: 'normal',
+      variables: {},
+      version: 1,
+      is_approved: true
+    },
+    {
+      title: '支払い報告_緊急',
+      content: '支払いに関する緊急事態を報告いたします。',
+      category: 'payment',
+      intent: 'report',
+      tone: 'urgent',
+      variables: { issue_type: 'string' },
+      version: 1,
+      is_approved: true
+    },
+    {
+      title: '料金確認_将来',
+      content: '将来の料金体系についてご案内いたします。',
+      category: 'payment',
+      intent: 'check',
+      tone: 'future',
+      variables: { service_type: 'string' },
+      version: 1,
+      is_approved: true
+    },
 
-    // アラートワードの作成
-    console.log('アラートワードを作成します');
-    const alertWord = await prisma.alertWord.create({
-      data: {
-        word: '予約',
-        description: '予約に関する問い合わせ',
-        related_tag_id: reservationTag.id,
-        priority: 1,
-      },
-    });
-    console.log('アラートワードを作成しました:', alertWord);
+    // 送迎関連テンプレート
+    {
+      title: '送迎確認_通常',
+      content: '送迎サービスのご確認をいたします。',
+      category: 'shuttle',
+      intent: 'check',
+      tone: 'normal',
+      variables: { pickup_location: 'string', dropoff_location: 'string' },
+      version: 1,
+      is_approved: true
+    },
+    {
+      title: '送迎予約_緊急',
+      content: '緊急の送迎サービスを承ります。',
+      category: 'shuttle',
+      intent: 'create',
+      tone: 'urgent',
+      variables: { customer_name: 'string', urgent_reason: 'string' },
+      version: 1,
+      is_approved: true
+    },
+    {
+      title: '送迎変更_通常',
+      content: '送迎サービスの変更を承ります。',
+      category: 'shuttle',
+      intent: 'modify',
+      tone: 'normal',
+      variables: { reservation_number: 'string', new_time: 'time' },
+      version: 1,
+      is_approved: true
+    },
+    {
+      title: '送迎キャンセル_通常',
+      content: '送迎サービスのキャンセルを承ります。',
+      category: 'shuttle',
+      intent: 'cancel',
+      tone: 'normal',
+      variables: { reservation_number: 'string' },
+      version: 1,
+      is_approved: true
+    },
 
-    // 管理者ユーザーの作成
-    const adminUsername = process.env.ADMIN_USERNAME || 'admin';
-    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-    const hashedPassword = await bcrypt.hash(adminPassword, 10);
+    // 設備関連テンプレート
+    {
+      title: '設備確認_通常',
+      content: '設備の利用状況をご確認いたします。',
+      category: 'facility',
+      intent: 'check',
+      tone: 'normal',
+      variables: { facility_type: 'string' },
+      version: 1,
+      is_approved: true
+    },
+    {
+      title: '設備予約_通常',
+      content: '設備のご予約を承ります。',
+      category: 'facility',
+      intent: 'create',
+      tone: 'normal',
+      variables: { facility_type: 'string', usage_date: 'date' },
+      version: 1,
+      is_approved: true
+    },
+    {
+      title: '設備故障_緊急',
+      content: '設備の故障を報告いたします。緊急対応いたします。',
+      category: 'facility',
+      intent: 'report',
+      tone: 'urgent',
+      variables: { facility_type: 'string', issue_description: 'string' },
+      version: 1,
+      is_approved: true
+    },
+    {
+      title: '設備案内_将来',
+      content: '新設備についてご案内いたします。',
+      category: 'facility',
+      intent: 'inquiry',
+      tone: 'future',
+      variables: { new_facility: 'string' },
+      version: 1,
+      is_approved: true
+    },
 
-    const existingAdmin = await prisma.adminUser.findUnique({
-      where: { username: adminUsername }
-    });
+    // トラブル関連テンプレート
+    {
+      title: 'トラブル報告_緊急',
+      content: 'トラブルを報告いたします。緊急対応いたします。',
+      category: 'trouble',
+      intent: 'report',
+      tone: 'urgent',
+      variables: { trouble_type: 'string', description: 'string' },
+      version: 1,
+      is_approved: true
+    },
+    {
+      title: 'トラブル確認_通常',
+      content: 'トラブルの状況をご確認いたします。',
+      category: 'trouble',
+      intent: 'check',
+      tone: 'normal',
+      variables: { trouble_id: 'string' },
+      version: 1,
+      is_approved: true
+    },
+    {
+      title: 'トラブル対応_通常',
+      content: 'トラブルへの対応についてご案内いたします。',
+      category: 'trouble',
+      intent: 'inquiry',
+      tone: 'normal',
+      variables: { trouble_type: 'string' },
+      version: 1,
+      is_approved: true
+    },
 
-    if (!existingAdmin) {
-      await prisma.adminUser.create({
-        data: {
-          username: adminUsername,
-          email: 'admin@example.com',
-          password_hash: hashedPassword
-        }
-      });
-      console.log('Admin user created');
-    } else {
-      console.log('Admin user already exists');
+    // その他関連テンプレート
+    {
+      title: '営業時間_通常',
+      content: '営業時間についてご案内いたします。',
+      category: 'other',
+      intent: 'inquiry',
+      tone: 'normal',
+      variables: {},
+      version: 1,
+      is_approved: true
+    },
+    {
+      title: '問い合わせ_通常',
+      content: 'お問い合わせを承ります。',
+      category: 'other',
+      intent: 'inquiry',
+      tone: 'normal',
+      variables: { inquiry_type: 'string' },
+      version: 1,
+      is_approved: true
+    },
+    {
+      title: '緊急連絡_緊急',
+      content: '緊急のご連絡を承ります。',
+      category: 'other',
+      intent: 'report',
+      tone: 'urgent',
+      variables: { emergency_type: 'string' },
+      version: 1,
+      is_approved: true
     }
+  ];
 
-    console.log('シードデータの投入が完了しました');
-  } catch (error) {
-    console.error('シードデータの投入中にエラーが発生しました:', error);
-    throw error;
+  for (const template of templates) {
+    await prisma.templates.create({
+      data: template
+    });
   }
+
+  console.log(`Created ${templates.length} templates`);
+  console.log('Seeding completed');
 }
 
 main()

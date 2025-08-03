@@ -1,9 +1,18 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { prisma } from '../../../lib/db';
 
 // GET: 履歴データを取得
 export async function GET() {
   try {
+    // prismaがundefinedでないことを確認
+    if (!prisma) {
+      console.error('Prisma client is not initialized');
+      return NextResponse.json(
+        { error: 'Database connection error' },
+        { status: 500 }
+      );
+    }
+
     const logs = await prisma.responseLog.findMany({
       orderBy: {
         created_at: 'desc'
@@ -26,6 +35,15 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { query, response, response_count } = body;
+
+    // prismaがundefinedでないことを確認
+    if (!prisma) {
+      console.error('Prisma client is not initialized');
+      return NextResponse.json(
+        { error: 'Database connection error' },
+        { status: 500 }
+      );
+    }
 
     const log = await prisma.responseLog.create({
       data: {

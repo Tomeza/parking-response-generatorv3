@@ -94,6 +94,14 @@ export async function searchKnowledge(query: string, tags?: string): Promise<Sea
     return [];
   }
 
+  // キャッシュチェック
+  const cachedResults = getCachedResults(normalizedQuery);
+  if (cachedResults) {
+    console.log('Cache hit for query:', normalizedQuery);
+    updateSearchMetrics(Date.now() - startTime);
+    return cachedResults;
+  }
+
   if (!tokenizer) {
     console.time('SK_KuromojiInit');
     tokenizer = await tokenizerPromise;
@@ -342,6 +350,13 @@ export async function searchKnowledge(query: string, tags?: string): Promise<Sea
       score: r.score,
       scoreDetails: r.score_details 
     })));
+    
+    // キャッシュに保存
+    setCachedResults(normalizedQuery, rerankedResults);
+    
+    // メトリクス更新
+    updateSearchMetrics(Date.now() - startTime);
+    
     console.timeEnd('SK_Total');
     return rerankedResults;
 
@@ -352,6 +367,13 @@ export async function searchKnowledge(query: string, tags?: string): Promise<Sea
       console.time('SK_SimpleSearch_ErrorFallback');
       const fallbackResult = await simpleSearch(normalizedQuery, allTokens);
       console.timeEnd('SK_SimpleSearch_ErrorFallback');
+      
+      // フォールバック結果もキャッシュに保存
+      setCachedResults(normalizedQuery, fallbackResult);
+      
+      // メトリクス更新
+      updateSearchMetrics(Date.now() - startTime);
+      
       console.timeEnd('SK_Total');
       return fallbackResult;
   } catch (fallbackError) {
@@ -363,6 +385,65 @@ export async function searchKnowledge(query: string, tags?: string): Promise<Sea
 }
 
 export type { SearchResult };
+
+// 検索メトリクス管理
+interface SearchMetrics {
+  totalSearches: number;
+  cacheHits: number;
+  averageSearchTime: number;
+  lastSearchTime: string | null;
+}
+
+let searchMetrics: SearchMetrics = {
+  totalSearches: 0,
+  cacheHits: 0,
+  averageSearchTime: 0,
+  lastSearchTime: null
+};
+
+let searchCache = new Map<string, { results: SearchResult[]; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5分
+
+export function getSearchMetrics(): SearchMetrics {
+  return { ...searchMetrics };
+}
+
+export function clearSearchCache(): void {
+  searchCache.clear();
+  searchMetrics = {
+    totalSearches: 0,
+    cacheHits: 0,
+    averageSearchTime: 0,
+    lastSearchTime: null
+  };
+}
+
+// キャッシュ機能を追加
+function getCachedResults(query: string): SearchResult[] | null {
+  const cached = searchCache.get(query);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    searchMetrics.cacheHits++;
+    return cached.results;
+  }
+  return null;
+}
+
+function setCachedResults(query: string, results: SearchResult[]): void {
+  searchCache.set(query, {
+    results,
+    timestamp: Date.now()
+  });
+}
+
+// メトリクス更新関数
+function updateSearchMetrics(searchTime: number): void {
+  searchMetrics.totalSearches++;
+  searchMetrics.lastSearchTime = new Date().toISOString();
+  
+  // 平均検索時間の更新
+  const totalTime = searchMetrics.averageSearchTime * (searchMetrics.totalSearches - 1) + searchTime;
+  searchMetrics.averageSearchTime = totalTime / searchMetrics.totalSearches;
+}
 
 // フォールバック検索関数 (例) - コメントアウトされたまま
 /*

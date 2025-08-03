@@ -4,8 +4,7 @@ import { PrismaClient } from '@prisma/client';
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
 // 開発環境で複数のインスタンスが作成されるのを防ぐ
-export const prisma =
-  globalForPrisma.prisma ||
+const prismaClient = globalForPrisma.prisma ||
   new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
     datasources: {
@@ -15,6 +14,10 @@ export const prisma =
     }
   });
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prismaClient;
 
-export default prisma; 
+// 名前付きエクスポート
+export const prisma = prismaClient;
+
+// デフォルトエクスポート
+export default prismaClient; 

@@ -1,5 +1,5 @@
-import { USE_DB_TEMPLATES } from "@/src/config/flags";
-import type { TemplateQuery } from "@/src/utils/mapRouterToQuery";
+import { USE_DB_TEMPLATES } from "@/config/flags";
+import type { TemplateQuery } from "@/utils/mapRouterToQuery";
 
 export interface Template {
   id: string;

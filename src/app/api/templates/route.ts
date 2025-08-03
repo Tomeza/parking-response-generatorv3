@@ -3,26 +3,36 @@ import { supabase } from '@/lib/supabase';
 
 export async function GET() {
   try {
-    // 一時的に認証を無効にして、全テンプレートを取得
+    // セッションを取得
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError) {
+      console.error('Session error:', sessionError);
+      return NextResponse.json({ error: 'Authentication failed' }, { status: 401 });
+    }
+
+    if (!session) {
+      console.log('No session found');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    console.log('Authenticated user:', session.user.email);
+
+    // テンプレートを取得
     const { data: templates, error } = await supabase
       .from('templates')
       .select('*')
-      .order('updated_at', { ascending: false });
+      .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching templates:', error);
-      return NextResponse.json(
-        { error: 'テンプレートの取得に失敗しました' },
-        { status: 500 }
-      );
+      console.error('Database error:', error);
+      return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 
-    return NextResponse.json({ templates });
-  } catch (err) {
-    console.error('Unexpected error:', err);
-    return NextResponse.json(
-      { error: '予期せぬエラーが発生しました' },
-      { status: 500 }
-    );
+    console.log(`Found ${templates?.length || 0} templates`);
+    return NextResponse.json({ templates: templates || [] });
+  } catch (error) {
+    console.error('Unexpected error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 } 

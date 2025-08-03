@@ -6,36 +6,36 @@ export async function middleware(request: NextRequest) {
   const res = NextResponse.next();
   const supabase = createMiddlewareClient({ req: request, res });
 
-  // セッションの更新
   const {
     data: { session },
   } = await supabase.auth.getSession();
 
-  // デバッグ情報
-  console.log('Middleware - Path:', request.nextUrl.pathname);
-  console.log('Middleware - Session exists:', !!session);
-  console.log('Middleware - Session user:', session?.user?.email);
-
   // 保護されたルートの設定
   const isAuthRoute = request.nextUrl.pathname.startsWith('/templates');
-  // 一時的にAPIルートの認証を無効
-  // const isApiRoute = request.nextUrl.pathname.startsWith('/api/templates');
+  const isApiRoute = request.nextUrl.pathname.startsWith('/api/templates');
 
-  if (isAuthRoute && !session) {
-    console.log('Middleware - Redirecting to login (no session)');
+  // 認証が必要なルートでセッションがない場合
+  if ((isAuthRoute || isApiRoute) && !session) {
+    // APIルートの場合は401エラーを返す
+    if (isApiRoute) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
+    // ページルートの場合はログインページにリダイレクト
     const redirectUrl = new URL('/auth/login', request.url);
     redirectUrl.searchParams.set('redirect', request.nextUrl.pathname);
     return NextResponse.redirect(redirectUrl);
   }
 
-  console.log('Middleware - Allowing request to continue');
   return res;
 }
 
 export const config = {
   matcher: [
     '/templates/:path*',
-    // 一時的にAPIルートを除外
-    // '/api/templates/:path*',
+    '/api/templates/:path*',
   ],
 }; 

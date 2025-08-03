@@ -92,8 +92,7 @@ export class FaqReviewManager {
   }> {
     // FAQの情報を取得
     const faq = await prisma.faqRaw.findUnique({
-      where: { id: faqId },
-      include: { usage_stats: true }
+      where: { id: faqId }
     });
 
     if (!faq) {
