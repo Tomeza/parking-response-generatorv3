@@ -4,6 +4,7 @@ import { type SearchResult } from '../../../lib/common-types';
 import { prisma } from '../../../lib/db';
 import { addMandatoryAlerts, detectAlertKeywords } from '../../../lib/alert-system';
 import { refineResponse, analyzeQuery, rerankResults } from '@/lib/anthropic';
+import { ENABLE_SHADOW_ROUTING, ENABLE_CANARY_ROUTING, CANARY_PERCENTAGE, SHADOW_HEADER, CANARY_HEADER } from '@/config/flags';
 
 // Helper function for timing
 async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
@@ -11,6 +12,45 @@ async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
   const res = await fn();
   console.timeEnd(label);
   return res;
+}
+
+// Shadow/Canary制御関数
+function shouldEnableShadowMode(request: NextRequest): boolean {
+  return ENABLE_SHADOW_ROUTING && request.headers.get(SHADOW_HEADER) === 'true';
+}
+
+function shouldEnableCanaryMode(request: NextRequest): boolean {
+  if (!ENABLE_CANARY_ROUTING) return false;
+  
+  // ヘッダーベースの制御
+  if (request.headers.get(CANARY_HEADER) === 'true') return true;
+  
+  // パーセンテージベースの制御
+  const userId = request.headers.get('x-user-id') || 'default';
+  const hash = userId.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+  return (hash % 100) < CANARY_PERCENTAGE;
+}
+
+// Shadow/Canary用ログ関数
+async function logShadowRouting(query: string, analysis: any, template: any, response: any) {
+  try {
+    await prisma.routingLogs.create({
+      data: {
+        query_text: query,
+        detected_category: analysis.category,
+        detected_intent: analysis.intent,
+        detected_tone: analysis.tone,
+        selected_template_id: template?.id || null,
+        confidence_score: analysis.confidence || 0,
+        is_fallback: false,
+        processing_time_ms: 0,
+        session_id: 'shadow',
+        user_id: 'shadow'
+      }
+    });
+  } catch (error) {
+    console.error('Shadow logging error:', error);
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -29,9 +69,14 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Shadow/Canary制御
+  const isShadowMode = shouldEnableShadowMode(request);
+  const isCanaryMode = shouldEnableCanaryMode(request);
+
   try {
     console.log('Query received:', decodedQuery);
     console.log('Tags received:', decodedTags);
+    console.log('Routing mode:', isShadowMode ? 'SHADOW' : isCanaryMode ? 'CANARY' : 'PRODUCTION');
 
     // 1. Analyze Query
     const analysisResult: any = await timed('A1_Step1_AnalyzeQuery', async () => {
@@ -80,6 +125,13 @@ export async function GET(request: NextRequest) {
         ],
         performance: { total_time_ms: searchTime }
       };
+      
+      // Shadow modeの場合はログのみ記録
+      if (isShadowMode) {
+        await logShadowRouting(decodedQuery, analysisResult, null, notFoundResponse);
+        return NextResponse.json({ message: 'Shadow mode - no response to user' });
+      }
+      
       await prisma.responseLog.create({
         data: { query: decodedQuery, response: notFoundWithAlerts, used_knowledge_ids: [], missing_tags: [], missing_alerts: [], created_at: new Date() }
       });
