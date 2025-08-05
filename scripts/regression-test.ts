@@ -65,6 +65,36 @@ const regressionTests: RegressionTestCase[] = [
       urgency: "high"
     },
     description: "故障は緊急対応"
+  },
+  {
+    query: "送迎サービスの時間を教えてください",
+    expected: {
+      category: "shuttle",
+      intent: "inquiry",
+      tone: "normal",
+      urgency: "low"
+    },
+    description: "「教えて」でinquiryに固定"
+  },
+  {
+    query: "空港までの送迎にどれくらい時間がかかりますか",
+    expected: {
+      category: "shuttle",
+      intent: "inquiry",
+      tone: "normal",
+      urgency: "low"
+    },
+    description: "時間問い合わせでinquiry"
+  },
+  {
+    query: "送迎時間を確認したい",
+    expected: {
+      category: "shuttle",
+      intent: "check",
+      tone: "normal",
+      urgency: "low"
+    },
+    description: "「確認したい」でcheckに固定"
   }
 ];
 

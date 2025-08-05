@@ -206,12 +206,17 @@ export class QueryAnalyzer {
     return winner;
   }
 
-  private resolveIntent(query: string, category?: string): 'check'|'modify'|'inquiry'|'report'|'guide'|'warn'|'answer' {
+  private resolveIntent(query: string, category?: string): 'check'|'modify'|'inquiry'|'report'|'guide'|'warn'|'answer'|'cancel' {
     const q = query;
 
     // まず強い動作系
     if (/(変更|修正|訂正|更新)/.test(q)) return 'modify';
-    if (/(報告|起きました|発生|紛失(しました)?|なくした|失くした|落とした|壊れた|破損)/.test(q)) return 'report';
+    if (/(キャンセル|取り消し|解約)/.test(q)) return 'cancel';
+    if (/(報告|起きました|発生|紛失(しました)?|なくした|失くした|落とした|壊れた|破損|故障|出られません)/.test(q)) return 'report';
+
+    // 辞書系の最終上書き（LLM結果より優先）
+    if (/(教えて|知りたい|案内して|教えてください)/.test(q)) return 'inquiry';
+    if (/(確認したい|確認お願いします|確認)/.test(q)) return 'check';
 
     // カテゴリ別の例外（payment: 「のみ可能ですか」は案内寄り）
     if (category === 'payment' && /(のみ).*(可能ですか)/.test(q)) return 'inquiry';
@@ -233,6 +238,12 @@ export class QueryAnalyzer {
 
   private resolveUrgency(query: string, category?: string, intent?: string): 'low'|'medium'|'high' {
     const q = query;
+    
+    // 緊急度マップ（齟齬防止）
+    if (/(トラブル|事故|接触|鍵(紛失)?)/.test(q)) return 'high';
+    if (/(クレーム|返金|落とし物|紛失)/.test(q)) return 'medium';
+    
+    // カテゴリ・意図別の詳細判定
     if ((category === 'trouble' || category === 'facility') && intent === 'report') {
       if (/(事故|けが|怪我|出られない|閉じ込め|火事|警報|ゲート.*開かない|緊急|至急|故障|トラブル|クレーム)/.test(q)) return 'high';
       if (/(紛失|なくした|失くした|落とした|破損|忘れ物)/.test(q)) return 'medium';
@@ -240,6 +251,11 @@ export class QueryAnalyzer {
     // 返金手続きは中程度の緊急度
     if (category === 'trouble' && intent === 'inquiry' && /(返金|返還|払い戻し)/.test(q)) return 'medium';
     return 'low';
+  }
+
+  private makeReasoning(query: string, decided: {category: string, intent: string, tone: string, urgency: string}): string {
+    const {category, intent, tone, urgency} = decided;
+    return `${category}/${intent}/${tone}/${urgency}と判断`;
   }
 
   private isCategoryRule(rule: any): rule is CategoryRule {
@@ -426,10 +442,9 @@ export class QueryAnalyzer {
         analysis.category = overriddenCategory;
       }
       
-      // ルールベースのintentを優先
-      if (analysis.intent === 'inquiry' && ruleIntent !== 'inquiry') {
-        analysis.intent = ruleIntent;
-      }
+      // 辞書系の最終上書き（LLM結果より優先）
+      const finalIntent = this.resolveIntent(query, analysis.category);
+      analysis.intent = finalIntent;
       
       // トーンと緊急度の調整
       const finalCategory = overriddenCategory || primaryCategory;
@@ -437,9 +452,23 @@ export class QueryAnalyzer {
       analysis.urgency = this.resolveUrgency(query, finalCategory, analysis.intent);
       
       const finalAnalysis = this.validateAndNormalizeAnalysis(analysis, finalCategory);
+      
+      // 最終確定ラベルから reasoning を再生成
+      const decided = {
+        category: finalAnalysis.category,
+        intent: finalAnalysis.intent,
+        tone: finalAnalysis.tone,
+        urgency: finalAnalysis.urgency
+      };
+      // originalQuery の非空アサーション
+      if (!query?.trim()) {
+        throw new Error('originalQuery is empty');
+      }
+      
       finalAnalysis.metadata = {
         ...finalAnalysis.metadata,
         originalQuery: query,
+        reasoning: this.makeReasoning(query, decided)
       };
       return finalAnalysis;
     } catch (error) {
