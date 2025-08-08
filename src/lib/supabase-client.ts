@@ -1,27 +1,15 @@
 import { createSupabaseBrowserClient } from './supabase/browser';
-import { createClient } from '@supabase/supabase-js';
 
-// 環境変数のチェック
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-  throw new Error('Missing environment variable: NEXT_PUBLIC_SUPABASE_URL');
-}
-
-if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-  throw new Error('Missing environment variable: NEXT_PUBLIC_SUPABASE_ANON_KEY');
-}
-
-// 統一されたSupabaseクライアント
-export const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-    },
+// 統一されたSupabaseクライアント（環境変数チェックは関数内で実行）
+export const createSupabaseClient = () => {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    throw new Error('Missing environment variable: NEXT_PUBLIC_SUPABASE_URL');
   }
-);
+  if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    throw new Error('Missing environment variable: NEXT_PUBLIC_SUPABASE_ANON_KEY');
+  }
+  return createSupabaseBrowserClient();
+};
 
-// Next.js SSR用のクライアント
-export const createSupabaseClient = () => createSupabaseBrowserClient(); 
+// 後方互換性のため残す（非推奨）
+export const supabase = createSupabaseClient(); 

@@ -129,5 +129,32 @@ curl -I $APP_URL/admin | head -n1      # 302/307 未ログイン時リダイレ�
 - `Templates`: `status='approved'`のみ公開読み取り
 - ログテーブル: クライアントからの書き込み完全拒否
 - 管理画面: `/admin/**`のみ認証必須
+
+### 復旧手順
+問題が発生した場合の復旧手順：
+
+1. **環境変数のロールバック**
+   ```bash
+   # Vercelで環境変数を前の値に戻す
+   npx vercel env ls production
+   npx vercel env rm <variable_name>
+   npx vercel env add <variable_name>
+   ```
+
+2. **再デプロイ**
+   ```bash
+   npm run build && npx vercel --prod
+   ```
+
+3. **RLSポリシーのロールバック**
+   ```sql
+   -- Supabase SQL Editorで実行
+   DROP POLICY IF EXISTS read_approved_templates ON "public"."Templates";
+   ALTER TABLE "public"."Templates" DISABLE ROW LEVEL SECURITY;
+   ALTER TABLE "public"."ResponseLog" DISABLE ROW LEVEL SECURITY;
+   ALTER TABLE "public"."RoutingLogs" DISABLE ROW LEVEL SECURITY;
+   ALTER TABLE "public"."FeedbackLogs" DISABLE ROW LEVEL SECURITY;
+   GRANT ALL ON TABLE "public"."Templates" TO anon, authenticated;
+   ```
 - Prisma
 - TypeScript
