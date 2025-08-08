@@ -1,4 +1,4 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createSupabaseServerClient } from './supabase/server';
 import { cookies } from 'next/headers';
 import { cache } from 'react';
 
@@ -17,7 +17,7 @@ const roleHierarchy: Record<UserRole, number> = {
 
 // キャッシュされたセッション取得
 export const getSession = cache(async () => {
-  const supabase = createServerComponentClient({ cookies });
+  const supabase = createSupabaseServerClient();
   try {
     const {
       data: { session },

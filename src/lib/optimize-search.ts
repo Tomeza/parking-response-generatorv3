@@ -4,7 +4,7 @@
  */
 
 import { Prisma } from '@prisma/client';
-import { prisma } from './db';
+import { prisma } from '@/lib/prisma';
 
 export interface OptimizedSearchResult {
   id: number;

@@ -1,7 +1,7 @@
 /**
  * 日付検出と繁忙期チェックのためのユーティリティ関数
  */
-import { prisma } from './db';
+import { prisma } from '@/lib/prisma';
 import { SeasonalInfo } from '@prisma/client';
 
 /**

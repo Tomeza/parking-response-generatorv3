@@ -1,0 +1,8 @@
+---
+alwaysApply: true
+---
+Enable RLS on all tables. Start locked down; revoke anon/auth by default.
+For public.templates: allow SELECT to anon/auth only when `status = 'approved'`.
+Do not create INSERT/UPDATE/DELETE policies for anon/auth; writes go via service_role or secured RPC.
+Never expose service_role to the client; server-only usage.
+Never expose service_role to the client; do not prefix it with NEXT_PUBLIC.

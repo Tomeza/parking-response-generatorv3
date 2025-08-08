@@ -1,5 +1,7 @@
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
-import { prisma } from '../../../lib/db';
+import { prisma } from '@/lib/prisma';
 
 // GET: 履歴データを取得
 export async function GET() {

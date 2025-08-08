@@ -7,7 +7,9 @@
   "main": "index.js",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "prebuild": "node scripts/check-env.js",
+    "security:check": "node scripts/security-check.js",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "seed": "ts-node prisma/seed.ts",
@@ -49,14 +51,14 @@
     "template:import-dry": "tsx scripts/dry-run-template-import.ts",
     "template:archive-dummy": "tsx scripts/archive-dummy-templates.ts",
     "template:acceptance-test": "tsx scripts/test-acceptance-cases.ts",
-    "template:batch-import": "tsx scripts/batch-import-templates.ts"
+    "template:batch-import": "tsx scripts/batch-import-templates.ts",
+    "deploy:prod": "vercel --prod",
+    "deploy:inspect": "vercel inspect https://parking-response-generatorv3-b5kjsp9q4.vercel.app --logs"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "prisma": {
-    "seed": "node prisma/seed.cjs"
-  },
+
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
     "@headlessui/react": "^2.2.0",
@@ -66,8 +68,7 @@
     "@prisma/client": "^6.4.1",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tabs": "^1.1.12",
-    "@supabase/auth-helpers-nextjs": "^0.10.0",
-    "@supabase/auth-helpers-react": "^0.5.0",
+    "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.53.0",
     "@types/axios": "^0.9.36",
     "@types/pg": "^8.11.11",
@@ -80,6 +81,7 @@
     "csv-parser": "^3.2.0",
     "csv-writer": "^1.6.0",
     "date-fns": "^4.1.0",
+    "dotenv": "^17.2.1",
     "kuromoji": "^0.1.2",
     "langchain": "0.2.11",
     "mecab-lite": "^0.0.8",
@@ -108,6 +110,7 @@
     "tailwindcss": "^3.3.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.3",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vercel": "^44.7.3"
   }
 }

@@ -9,7 +9,7 @@ export interface Template {
   category: string;
   intent: string;
   tone: string;
-  variables: Record<string, string>;
+  variables: Record<string, any>;
   version: number;
   is_approved: boolean;
   metadata?: any;
@@ -29,6 +29,22 @@ export class GranularTemplateRouter {
 
   constructor() {
     this.prisma = prisma;
+  }
+
+  private convertToTemplate(dbTemplate: any): Template {
+    const normalized = {
+      id: dbTemplate.id,
+      title: dbTemplate.title,
+      content: dbTemplate.content,
+      category: dbTemplate.category,
+      intent: dbTemplate.intent,
+      tone: dbTemplate.tone,
+      variables: (dbTemplate.variables ?? {}) as unknown as Record<string, any>,
+      version: dbTemplate.version,
+      is_approved: dbTemplate.is_approved,
+      metadata: dbTemplate.metadata
+    };
+    return normalized as Template;
   }
 
   async routeQuery(analysis: any): Promise<RoutingResult> {
@@ -146,7 +162,7 @@ export class GranularTemplateRouter {
       
       if (granularTemplate) {
         console.log(`Granular template found: ${granularTemplate.title}`);
-        return granularTemplate;
+        return this.convertToTemplate(granularTemplate);
       }
       
       // 汎用テンプレートをフォールバック
@@ -164,7 +180,7 @@ export class GranularTemplateRouter {
       });
       
       console.log(`Exact match result: ${genericTemplate ? `Found: ${genericTemplate.title}` : 'Not found'}`);
-      return genericTemplate;
+      return genericTemplate ? this.convertToTemplate(genericTemplate) : null;
       
     } catch (error) {
       console.error('Error in findExactMatch:', error);
@@ -188,7 +204,7 @@ export class GranularTemplateRouter {
       });
       
       console.log(`Partial match result: ${template ? `Found: ${template.title}` : 'Not found'}`);
-      return template;
+      return template ? this.convertToTemplate(template) : null;
       
     } catch (error) {
       console.error('Error in findPartialMatch:', error);
@@ -211,7 +227,7 @@ export class GranularTemplateRouter {
       });
       
       console.log(`Category match result: ${template ? `Found: ${template.title}` : 'Not found'}`);
-      return template;
+      return template ? this.convertToTemplate(template) : null;
       
     } catch (error) {
       console.error('Error in findCategoryMatch:', error);
@@ -238,6 +254,7 @@ export class GranularTemplateRouter {
       
       if (templates.length > 0) {
         // 最も関連性の高いテンプレートを選択
+        // @ts-expect-error - Prisma JsonValue type mismatch
         return templates[0];
       }
       
@@ -267,6 +284,7 @@ export class GranularTemplateRouter {
         }
       });
       
+      // @ts-expect-error - Prisma JsonValue type mismatch
       return alternatives;
       
     } catch (error) {

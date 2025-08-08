@@ -3,7 +3,7 @@
  * 
  * タグの階層構造を活用した検索や、同義語を考慮した検索機能を提供します。
  */
-import { prisma } from './db';
+import { prisma } from '@/lib/prisma';
 import { Knowledge, Tag, TagSynonym } from '@prisma/client';
 
 /**

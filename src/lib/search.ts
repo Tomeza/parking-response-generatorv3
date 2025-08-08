@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { prisma } from './db';
+import { prisma } from '@/lib/prisma';
 import { SearchResult } from './common-types';
 import kuromoji, { IpadicFeatures } from 'kuromoji';
 import { searchSimilarKnowledge } from './embeddings';

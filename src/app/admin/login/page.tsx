@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase-client';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -23,11 +23,13 @@ export default function LoginPage() {
       });
 
       if (error) {
-        setError('認証に失敗しました。メールアドレスとパスワードを確認してください。');
+        console.error('🔍 Auth error:', error);
+        setError(`認証に失敗しました: ${error.message}`);
       } else {
         router.push('/admin');
       }
     } catch (error) {
+      console.error('🔍 Exception:', error);
       setError('エラーが発生しました。しばらくしてから再度お試しください。');
     } finally {
       setLoading(false);
@@ -52,7 +54,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-gray-900"
               required
             />
           </div>
@@ -63,7 +65,7 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-gray-900"
               required
             />
           </div>

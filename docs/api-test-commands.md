@@ -5,7 +5,11 @@
 ```bash
 # ローカル開発環境の認証情報
 export SUPABASE_URL="http://127.0.0.1:54321"
+<<<<<<< HEAD
 export SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0"
+=======
+export SUPABASE_ANON_KEY="your-anon-key-here"
+>>>>>>> 5be7145 (RLS: Complete production security setup with enhanced env checks)
 ```
 
 ## 基本的な検索パターン
@@ -70,7 +74,11 @@ curl -i "$SUPABASE_URL/functions/v1/get-templates" \
 ```bash
 # 不正なJWT
 curl -i "$SUPABASE_URL/functions/v1/get-templates?category=parking" \
+<<<<<<< HEAD
   -H "Authorization: Bearer invalid.token"
+=======
+  -H "Authorization: Bearer invalid-token-example"
+>>>>>>> 5be7145 (RLS: Complete production security setup with enhanced env checks)
 
 # 認証ヘッダなし
 curl -i "$SUPABASE_URL/functions/v1/get-templates?category=parking"
@@ -86,7 +94,11 @@ curl -i "$SUPABASE_URL/functions/v1/get-templates?category=parking"
 
 # 不正なJWT
 curl -i "$SUPABASE_URL/functions/v1/get-templates?category=parking" \
+<<<<<<< HEAD
   -H "Authorization: Bearer invalid.token"
+=======
+  -H "Authorization: Bearer invalid-token-example"
+>>>>>>> 5be7145 (RLS: Complete production security setup with enhanced env checks)
 ```
 
 ### 2. パラメータバリデーション

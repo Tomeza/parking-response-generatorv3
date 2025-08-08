@@ -1,4 +1,6 @@
-import { useState } from 'react';
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import {
@@ -33,8 +35,25 @@ function StatsCard({ title, value, description }: StatsCardProps) {
   );
 }
 
-export default async function UsageStats() {
-  const overallStats = await getOverallUsageStats();
+export default function UsageStats() {
+  const [overallStats, setOverallStats] = useState<any>(null);
+
+  // useEffect でデータを取得
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const stats = await getOverallUsageStats();
+        setOverallStats(stats);
+      } catch (error) {
+        console.error('Failed to fetch stats:', error);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  if (!overallStats) {
+    return <div>Loading statistics...</div>;
+  }
   
   return (
     <Tabs defaultValue="overview" className="w-full">

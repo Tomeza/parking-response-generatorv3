@@ -1,5 +1,17 @@
 import React from 'react';
-import { Template, RoutingResult } from '@/lib/template-router';
+import { Template } from '@/lib/template-router';
+
+interface RoutingResult {
+  template: Template | null;
+  confidence: number;
+  fallbackUsed: boolean;
+  processingTimeMs: number;
+  reasoning: string;
+  alternatives: Template[];
+  needsHumanReview: boolean;
+  reviewReason: string;
+  suggestedActions: string[];
+}
 
 interface RoutingResultProps {
   result: RoutingResult;

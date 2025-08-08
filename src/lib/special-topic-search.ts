@@ -3,7 +3,7 @@
  * 特に「外車の駐車」「予約変更」「国際線」など重要なトピックに特化
  */
 
-import { prisma } from './db';
+import { prisma } from '@/lib/prisma';
 import { Knowledge } from '@prisma/client';
 import { SearchResult } from './common-types';
 

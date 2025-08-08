@@ -1,7 +1,9 @@
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { searchKnowledge } from '../../../lib/search';
 import { type SearchResult } from '../../../lib/common-types';
-import { prisma } from '../../../lib/db';
+import { prisma } from '@/lib/prisma';
 import { addMandatoryAlerts, detectAlertKeywords } from '../../../lib/alert-system';
 import { refineResponse, analyzeQuery, rerankResults } from '@/lib/anthropic';
 import { ENABLE_SHADOW_ROUTING, ENABLE_CANARY_ROUTING, CANARY_PERCENTAGE, SHADOW_HEADER, CANARY_HEADER } from '@/config/flags';

@@ -98,5 +98,36 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 ## 技術スタック
 - Next.js
 - PostgreSQL
+- Supabase (Auth, Database)
+- Prisma (ORM)
+- Tailwind CSS
+
+## セキュリティ・運用
+
+### 環境変数チェック
+本番デプロイ前に自動でセキュリティチェックが実行されます：
+
+```bash
+npm run prebuild  # 環境変数チェック
+npm run security:check  # 包括的セキュリティチェック
+```
+
+### 運用スモークテスト
+デプロイ後の動作確認：
+
+```bash
+# 公開ページの確認
+curl -I $APP_URL/ | head -n1           # 200/304
+curl -I $APP_URL/templates | head -n1  # 200
+
+# 認証保護の確認
+curl -I $APP_URL/admin | head -n1      # 302/307 未ログイン時リダイレクト
+```
+
+### RLS (Row Level Security)
+- 全テーブルでRLS有効化
+- `Templates`: `status='approved'`のみ公開読み取り
+- ログテーブル: クライアントからの書き込み完全拒否
+- 管理画面: `/admin/**`のみ認証必須
 - Prisma
 - TypeScript

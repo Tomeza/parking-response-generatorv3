@@ -1,5 +1,5 @@
 import { QueryAnalysis } from './query-analyzer';
-import { prisma } from './db';
+import { prisma } from '@/lib/prisma';
 
 export interface Template {
   id: number;

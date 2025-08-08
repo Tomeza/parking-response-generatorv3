@@ -1,12 +1,12 @@
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["multiSchema"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-  schemas  = ["extensions", "public"]
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["extensions", "public"]
 }
 
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
@@ -255,60 +255,60 @@ model FaqClassificationLog {
 }
 
 model Templates {
-  id              Int       @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
   // ルーティングキー
-  category        String
-  intent          String
-  tone            String
-  title           String
-  version         Int       @default(1)
+  category String
+  intent   String
+  tone     String
+  title    String
+  version  Int    @default(1)
 
   // 本文/変数
-  content         String
-  variables       Json?
+  content   String
+  variables Json?
 
   // 運用
-  status          String    @default("approved") // draft/pending/approved/archived
-  is_approved     Boolean   @default(true)
+  status      String  @default("approved") // draft/pending/approved/archived
+  is_approved Boolean @default(true)
 
   // 根拠（新設カラム）
-  source          String?   // 'csv'
-  sourceRowId     Int?
-  sourceHash      String?
-  usageLabel      String?   // ◯/△/✖️
-  note            String?
-  originQuestion  String?   // 元の質問文
-  replyTypeTags   String[]  @default([])
-  infoSourceTags  String[]  @default([])
-  situationTags   String[]  @default([])
+  source         String? // 'csv'
+  sourceRowId    Int?
+  sourceHash     String?
+  usageLabel     String? // ◯/△/✖️
+  note           String?
+  originQuestion String? // 元の質問文
+  replyTypeTags  String[] @default([])
+  infoSourceTags String[] @default([])
+  situationTags  String[] @default([])
 
   // 既存カラム（この段階では残す）
-  metadata        Json?
-  approved_by     String?
-  approved_at     DateTime?
+  metadata    Json?
+  approved_by String?
+  approved_at DateTime?
 
-  created_at      DateTime  @default(now())
-  updated_at      DateTime  @default(now())
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
 
-  @@index([category, intent, tone, status])
   @@unique([category, intent, tone, title, version])
+  @@index([category, intent, tone, status])
   @@schema("public")
 }
 
 model RoutingLogs {
-  id                  Int      @id @default(autoincrement())
-  query_text          String
-  detected_category   String
-  detected_intent     String
-  detected_tone       String
+  id                   Int      @id @default(autoincrement())
+  query_text           String
+  detected_category    String
+  detected_intent      String
+  detected_tone        String
   selected_template_id Int?
-  confidence_score    Float?
-  is_fallback         Boolean  @default(false)
-  processing_time_ms  Int?
-  created_at          DateTime @default(now())
-  session_id          String?
-  user_id             String?
+  confidence_score     Float?
+  is_fallback          Boolean  @default(false)
+  processing_time_ms   Int?
+  created_at           DateTime @default(now())
+  session_id           String?
+  user_id              String?
 
   @@index([created_at])
   @@index([detected_category])
@@ -317,14 +317,14 @@ model RoutingLogs {
 }
 
 model FeedbackLogs {
-  id             Int      @id @default(autoincrement())
-  routing_log_id Int?
-  is_correct     Boolean?
+  id              Int      @id @default(autoincrement())
+  routing_log_id  Int?
+  is_correct      Boolean?
   correction_type String?
   corrected_value String?
-  feedback_text  String?
-  created_at     DateTime @default(now())
-  user_id        String?
+  feedback_text   String?
+  created_at      DateTime @default(now())
+  user_id         String?
 
   @@index([routing_log_id])
   @@index([created_at])

@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { prisma } from './db';
+import { prisma } from '@/lib/prisma';
 
 // OpenAI クライアント初期化
 const openai = new OpenAI({

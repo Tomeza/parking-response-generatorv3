@@ -1,41 +1,47 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 
-export async function middleware(request: NextRequest) {
+export const config = {
+  // 認証をかけるのは管理画面と管理系APIだけ
+  matcher: ['/admin/:path*', '/api/admin/:path*'],
+};
+
+export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
-  const supabase = createMiddlewareClient({ req: request, res });
+
+  // Supabase SSR クライアント（Cookie連携）
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => req.cookies.getAll(),
+        setAll: (cookiesToSet) => {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            res.cookies.set(name, value, options);
+          });
+        },
+      },
+    }
+  );
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  // 保護されたルートの設定
-  const isAuthRoute = request.nextUrl.pathname.startsWith('/templates');
-  const isApiRoute = request.nextUrl.pathname.startsWith('/api/templates');
+  // API は 401、ページはログインへリダイレクト
+  const pathname = req.nextUrl.pathname;
+  const isApi = pathname.startsWith('/api/');
 
-  // 認証が必要なルートでセッションがない場合
-  if ((isAuthRoute || isApiRoute) && !session) {
-    // APIルートの場合は401エラーを返す
-    if (isApiRoute) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+  if (!user) {
+    if (isApi) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
-    // ページルートの場合はログインページにリダイレクト
-    const redirectUrl = new URL('/auth/login', request.url);
-    redirectUrl.searchParams.set('redirect', request.nextUrl.pathname);
-    return NextResponse.redirect(redirectUrl);
+    const loginUrl = new URL('/admin/login', req.url);
+    loginUrl.searchParams.set('redirectedFrom', pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
   return res;
-}
-
-export const config = {
-  matcher: [
-    '/templates/:path*',
-    '/api/templates/:path*',
-  ],
-}; 
+} 

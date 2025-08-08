@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createSupabaseBrowserClient } from '@/lib/supabase/browser';
 import TemplateList from '@/components/templates/TemplateList';
 import ApprovalFlow from '@/components/templates/ApprovalFlow';
 import ApprovalHistory from '@/components/templates/ApprovalHistory';
@@ -14,7 +14,7 @@ export default function TemplatesPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const router = useRouter();
-  const supabase = createClientComponentClient();
+  const supabase = createSupabaseBrowserClient();
 
   useEffect(() => {
     const fetchTemplates = async () => {

@@ -1,0 +1,8 @@
+---
+alwaysApply: true
+---
+Default API runtime = 'nodejs'; avoid Edge when using Supabase or `process` APIs.
+Middleware must only match `/admin/**` and `/api/admin/**`; public pages must stay public.
+Before build, run the prebuild guard to reject localhost/127.0.0.1 when NODE_ENV=production.
+DATABASE_URL uses port 6543 with pgbouncer; DIRECT_URL uses 5432 for migrations.
+Never print or read secrets in chat; show masked values only. Use `vercel env` for updates.

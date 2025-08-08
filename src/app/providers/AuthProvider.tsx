@@ -1,8 +1,8 @@
 'use client';
 
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
 import { createContext, useContext, useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase-client';
 
 interface AuthContextType {
   user: any;
@@ -25,7 +25,6 @@ export default function AuthProvider({
 }) {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClientComponentClient();
   const router = useRouter();
 
   useEffect(() => {

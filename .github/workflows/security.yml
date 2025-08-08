@@ -1,0 +1,64 @@
+name: Security Check
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  security-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # 全履歴を取得してgitleaksでチェック
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run environment check
+      run: npm run prebuild
+      env:
+        NODE_ENV: production
+    
+    - name: Run security check
+      run: npm run security:check
+    
+    - name: Install gitleaks
+      run: |
+        curl -sSL https://raw.githubusercontent.com/zricethezav/gitleaks/master/install.sh | bash
+        sudo mv gitleaks /usr/local/bin/
+    
+    - name: Run gitleaks
+      run: gitleaks detect --source . --verbose
+    
+    - name: Check for secrets in build artifacts
+      run: |
+        npm run build
+        if grep -r "sk-" .next; then
+          echo "❌ Secrets found in build artifacts"
+          exit 1
+        else
+          echo "✅ No secrets in build artifacts"
+        fi
+    
+    - name: Mask secrets in logs
+      run: |
+        if [ -n "${{ secrets.OPENAI_API_KEY }}" ]; then
+          echo "::add-mask::${{ secrets.OPENAI_API_KEY }}"
+        fi
+        if [ -n "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
+          echo "::add-mask::${{ secrets.ANTHROPIC_API_KEY }}"
+        fi
+        if [ -n "${{ secrets.DATABASE_URL }}" ]; then
+          echo "::add-mask::${{ secrets.DATABASE_URL }}"
+        fi 
