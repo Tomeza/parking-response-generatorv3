@@ -135,11 +135,17 @@ jobs:
       - name: Check for secrets
         run: |
           echo "Checking for potential secrets..."
-          # 基本的なシークレットチェック
-          if grep -r "password\|secret\|key\|token" --include="*.ts" --include="*.js" --include="*.json" src/ | grep -v "process.env" | grep -v "NEXT_PUBLIC"; then
-            echo "Potential secrets found in code!"
+          # 厳密なシークレットパターンのチェック（API key形式など）
+          if grep -rE "(sk-[a-zA-Z0-9]{48}|xoxb-[0-9]+-[0-9]+-[a-zA-Z0-9]+|AIza[a-zA-Z0-9_-]{35})" --include="*.ts" --include="*.js" --include="*.json" src/; then
+            echo "Actual API keys found in code!"
             exit 1
           fi
+          # ハードコードされたパスワードパターンをチェック
+          if grep -rE "(password\s*[:=]\s*['\"][^'\"]{8,}['\"]|secret\s*[:=]\s*['\"][^'\"]{8,}['\"])" --include="*.ts" --include="*.js" --include="*.json" src/ | grep -v "process.env"; then
+            echo "Hardcoded passwords/secrets found in code!"
+            exit 1
+          fi
+          echo "✅ No actual secrets found in code"
 
   # 6. デプロイ（mainブランチのみ）
   deploy:

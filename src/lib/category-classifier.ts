@@ -108,6 +108,9 @@ export interface CategoryMetrics {
 }
 
 export async function classifyFaqCategory(faq: { question: string; answer: string; id?: string }): Promise<CategoryClassificationResult> {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY environment variable is required');
+  }
   const openai = new OpenAI();
 
   try {

@@ -1,10 +1,19 @@
 import OpenAI from 'openai';
 import { prisma } from '@/lib/prisma';
 
-// OpenAI クライアント初期化
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let openaiInstance: OpenAI | null = null;
+
+function getOpenAI(): OpenAI {
+  if (!openaiInstance) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY environment variable is required');
+    }
+    openaiInstance = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openaiInstance;
+}
 
 // ベクトル埋め込みのキャッシュ
 const embeddingCache: Record<string, number[]> = {};
@@ -28,7 +37,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 
   try {
     // OpenAIのembedding APIを使用
-    const response = await openai.embeddings.create({
+    const response = await getOpenAI().embeddings.create({
       model: 'text-embedding-3-small',
       input: text.trim(),
     });
